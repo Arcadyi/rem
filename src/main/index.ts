@@ -2,7 +2,8 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { getInstalledGames } from './steam'
+import { getInstalledGames, getModsForGame } from './steam'
+import { Game } from '../shared/types'
 
 function createWindow(): void {
   // Create the browser window.
@@ -55,6 +56,9 @@ app.whenReady().then(() => {
 
   ipcMain.handle('getInstalledGames', async () => {
     return await getInstalledGames()
+  })
+  ipcMain.handle('getModsForGame', async (_event, game: Game) => {
+    return await getModsForGame(game)
   })
   createWindow()
 

@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import { Game } from '../shared/types'
 
 // Custom APIs for renderer
 const api = {}
@@ -12,7 +13,8 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
     contextBridge.exposeInMainWorld('steamAPI', {
-      getInstalledGames: () => ipcRenderer.invoke('getInstalledGames')
+      getInstalledGames: () => ipcRenderer.invoke('getInstalledGames'),
+      getModsForGame: (game: Game) => ipcRenderer.invoke('getModsForGame', game)
     })
   } catch (error) {
     console.error(error)

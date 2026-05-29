@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
 import { execSync } from 'child_process'
-import type { Game } from '../shared/types'
+import type { Game, Mod, ModStatus } from '../shared/types'
 
 const IGNORED_APP_IDS = new Set([
   228980, // Steamworks Common Redistributables
@@ -17,11 +17,8 @@ const IGNORED_APP_IDS = new Set([
   2180100 // Proton Hotfix
 ])
 
-// ---------------------------------------------------------------------------
-// Minimal VDF (Valve KeyValues) parser
+// VDF parser
 // Handles the flat/nested text format used by Steam's .vdf and .acf files.
-// ---------------------------------------------------------------------------
-
 type VdfValue = string | VdfNode
 interface VdfNode {
   [key: string]: VdfValue
@@ -126,10 +123,7 @@ function vdfNode(node: VdfNode, key: string): VdfNode | null {
   return v && typeof v === 'object' ? (v as VdfNode) : null
 }
 
-// ---------------------------------------------------------------------------
 // Steam path discovery
-// ---------------------------------------------------------------------------
-
 function getSteamPath(): string | null {
   if (process.platform === 'win32') {
     // Prefer the registry — most reliable even when Steam is on a non-default drive
@@ -177,10 +171,7 @@ function getSteamPath(): string | null {
   return null
 }
 
-// ---------------------------------------------------------------------------
 // Library folder discovery
-// ---------------------------------------------------------------------------
-
 function getLibraryPaths(steamPath: string): string[] {
   const vdfPath = path.join(steamPath, 'steamapps', 'libraryfolders.vdf')
   if (!fs.existsSync(vdfPath)) return [steamPath]
@@ -211,10 +202,7 @@ function getLibraryPaths(steamPath: string): string[] {
   return [...libraries]
 }
 
-// ---------------------------------------------------------------------------
 // App manifest parsing
-// ---------------------------------------------------------------------------
-
 interface AppManifest {
   appId: number
   name: string
@@ -237,10 +225,7 @@ function parseAppManifest(filePath: string): AppManifest | null {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Public API
-// ---------------------------------------------------------------------------
-
 /**
  * Returns all installed Steam games found across every Steam library on the
  * current machine (Windows and Linux).  Mod-related fields are initialised to
@@ -297,4 +282,161 @@ export async function getInstalledGames(): Promise<Game[]> {
   })
   unique.sort((a, b) => a.name.localeCompare(b.name))
   return unique
+}
+
+// ---------------------------------------------------------------------------
+// Workshop mod retrieval
+// ---------------------------------------------------------------------------
+
+interface WorkshopItemMeta {
+  remoteTimestamp: Date
+  sizeBytes: number
+}
+
+/**
+ * Parses appworkshop_<appId>.acf to extract per-item timestamps and sizes.
+ * Returns a map of itemId → metadata.
+ */
+function parseWorkshopAcf(acfPath: string): Map<number, WorkshopItemMeta> {
+  const result = new Map<number, WorkshopItemMeta>()
+  if (!fs.existsSync(acfPath)) return result
+
+  try {
+    const root = parseVdf(fs.readFileSync(acfPath, 'utf8'))
+    const workshop = vdfNode(root, 'appworkshop') ?? root
+
+    // WorkshopItemsInstalled holds the remote timeupdated and size for each item
+    const installed = vdfNode(workshop, 'workshopitemsinstalled')
+    if (!installed) return result
+
+    for (const itemKey of Object.keys(installed)) {
+      const itemId = parseInt(itemKey, 10)
+      if (isNaN(itemId)) continue
+
+      const entry = vdfNode(installed, itemKey)
+      if (!entry) continue
+
+      const ts = parseInt(vdfString(entry, 'timeupdated'), 10)
+      const size = parseInt(vdfString(entry, 'size'), 10)
+
+      result.set(itemId, {
+        remoteTimestamp: isNaN(ts) ? new Date(0) : new Date(ts * 1000),
+        sizeBytes: isNaN(size) ? 0 : size
+      })
+    }
+  } catch {
+    // Corrupt ACF — return whatever we parsed so far
+  }
+
+  return result
+}
+
+/**
+ * Fetches workshop item titles from the Steam Web API in batches.
+ * Does not require an API key.
+ */
+async function fetchWorkshopItemNames(itemIds: number[]): Promise<Map<number, string>> {
+  const names = new Map<number, string>()
+  if (itemIds.length === 0) return names
+
+  // The API accepts up to 100 items per request
+  const BATCH_SIZE = 100
+
+  for (let i = 0; i < itemIds.length; i += BATCH_SIZE) {
+    const batch = itemIds.slice(i, i + BATCH_SIZE)
+
+    const body = new URLSearchParams()
+    body.append('itemcount', String(batch.length))
+    batch.forEach((id, idx) => body.append(`publishedfileids[${idx}]`, String(id)))
+
+    try {
+      const res = await fetch(
+        'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/',
+        { method: 'POST', body }
+      )
+      if (!res.ok) continue
+
+      const json = await res.json()
+      const details: Array<{ publishedfileid: string; title?: string }> =
+        json?.response?.publishedfiledetails ?? []
+
+      for (const item of details) {
+        const id = parseInt(item.publishedfileid, 10)
+        if (!isNaN(id) && item.title) names.set(id, item.title)
+      }
+    } catch {
+      // Network unavailable — names will fall back to the itemId string
+    }
+  }
+
+  return names
+}
+
+/**
+ * Returns all installed workshop mods for a given game, including timestamps,
+ * sizes, update status, and titles fetched from the Steam Web API.
+ */
+export async function getModsForGame(game: Game): Promise<Mod[]> {
+  const { workshopPath, appId } = game
+
+  if (!fs.existsSync(workshopPath)) return []
+
+  // Find the steamapps dir: workshop/content/<appId> → up three levels → steamapps
+  const steamappsDir = path.resolve(workshopPath, '..', '..', '..')
+  const acfPath = path.join(steamappsDir, 'workshop', `appworkshop_${appId}.acf`)
+  const workshopMeta = parseWorkshopAcf(acfPath)
+
+  // Each subdirectory in workshopPath is one installed mod, named by its itemId
+  let entries: fs.Dirent[]
+  try {
+    entries = fs.readdirSync(workshopPath, { withFileTypes: true })
+  } catch {
+    return []
+  }
+
+  const modDirs = entries.filter((e) => e.isDirectory() && /^\d+$/.test(e.name))
+  const itemIds = modDirs.map((e) => parseInt(e.name, 10))
+
+  const names = await fetchWorkshopItemNames(itemIds)
+
+  const mods: Mod[] = []
+
+  for (const dir of modDirs) {
+    const itemId = parseInt(dir.name, 10)
+    const modPath = path.join(workshopPath, dir.name)
+    const meta = workshopMeta.get(itemId)
+
+    // Local timestamp: mtime of the mod folder (updated when Steam syncs it)
+    let localTimestamp: Date
+    try {
+      localTimestamp = fs.statSync(modPath).mtime
+    } catch {
+      localTimestamp = new Date(0)
+    }
+
+    const remoteTimestamp = meta?.remoteTimestamp ?? new Date(0)
+    const sizeBytes = meta?.sizeBytes ?? 0
+
+    let status: ModStatus
+    if (remoteTimestamp.getTime() === 0) {
+      status = 'unknown'
+    } else if (localTimestamp >= remoteTimestamp) {
+      status = 'upToDate'
+    } else {
+      status = 'outdated'
+    }
+
+    mods.push({
+      itemId,
+      name: names.get(itemId) ?? String(itemId),
+      path: modPath,
+      localTimestamp,
+      remoteTimestamp,
+      status,
+      sizeBytes
+    })
+  }
+
+  mods.sort((a, b) => a.name.localeCompare(b.name))
+  return mods
 }

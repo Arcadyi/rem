@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import type { Game } from '../shared/types'
+import type { Game, Mod } from '../shared/types'
 
 declare global {
   interface Window {
@@ -7,6 +7,7 @@ declare global {
     api: unknown
     steamAPI: {
       getInstalledGames: () => Promise<Game[]>
+      getModsForGame: (game: Game) => Promise<Mod[]>
     }
   }
 }
