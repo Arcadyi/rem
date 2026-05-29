@@ -1,8 +1,10 @@
 <script lang="ts">
   import type { Game, Mod } from '../../shared/types'
   import Titlebar from './components/Titlebar.svelte'
+  import Sidebar from './components/Sidebar.svelte'
 
   let games: Game[] = []
+  let gamesLoading = false
   let error: string | null = null
   let selectedGame: Game | null = null
   let mods: Mod[] = []
@@ -10,10 +12,13 @@
   let modsError: string | null = null
 
   async function loadGames(): Promise<void> {
+    gamesLoading = true
     try {
       games = await window.steamAPI.getInstalledGames()
     } catch (e) {
       error = e instanceof Error ? e.message : String(e)
+    } finally {
+      gamesLoading = false
     }
   }
 
@@ -36,6 +41,17 @@
 
 <div class="app">
   <Titlebar />
+  {#if !gamesLoading}
+    <main>
+      <Sidebar bind:games bind:selectedGame/>
+      <div class="content">
+      </div>
+    </main>
+  {:else}
+    <div class="main-loading-screen">
+      <span>Fetching Steam Metadata</span>
+    </div>
+  {/if}
 </div>
 
 <style>

@@ -1,4 +1,7 @@
 <script>
+import IconamoonSignMinusFill from '../assets/icons/IconamoonSignMinusFill.svelte'
+import IconamoonScreenFull from '../assets/icons/IconamoonScreenFull.svelte'
+import IconamoonClose from '../assets/icons/IconamoonClose.svelte'
 </script>
 
 <div class="titlebar">
@@ -11,10 +14,13 @@
 
   <div class="topbar-right">
     <button class="topbar-button" onclick={() => window.api.minimize()}>
+      <IconamoonSignMinusFill/>
     </button>
     <button class="topbar-button" onclick={() => window.api.maximize()}>
+      <IconamoonScreenFull/>
     </button>
     <button class="topbar-button close" onclick={() => window.api.close()}>
+      <IconamoonClose/>
     </button>
   </div>
 </div>
@@ -22,10 +28,7 @@
   .titlebar {
     display: flex;
     height: 48px;
-    padding-left: var(--spacing-m);
-    padding-top: var(--spacing-xs);
-    padding-right: var(--spacing-m);
-    padding-bottom: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-m);
     -webkit-app-region: drag;
   }
 
