@@ -288,8 +288,13 @@ export async function getInstalledGames(): Promise<Game[]> {
     }
   }
 
-  // Sort alphabetically for a predictable default order
-  games.sort((a, b) => a.name.localeCompare(b.name))
-
-  return games
+  // Have to do this to prevent duplicate entries.
+  const seen = new Set<number>()
+  const unique = games.filter((g) => {
+    if (seen.has(g.appId)) return false
+    seen.add(g.appId)
+    return true
+  })
+  unique.sort((a, b) => a.name.localeCompare(b.name))
+  return unique
 }
