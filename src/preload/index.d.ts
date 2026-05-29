@@ -4,7 +4,11 @@ import type { Game, Mod } from '../shared/types'
 declare global {
   interface Window {
     electron: ElectronAPI
-    api: unknown
+    api: {
+      minimize: () => ({})
+      maximize: () => ({})
+      close: () => ({})
+    }
     steamAPI: {
       getInstalledGames: () => Promise<Game[]>
       getModsForGame: (game: Game) => Promise<Mod[]>

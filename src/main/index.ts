@@ -22,11 +22,11 @@ function createWindow(): void {
     }
   })
 
-  ipcMain.on('windowMinimize', () => mainWindow.minimize())
-  ipcMain.on('windowMaximize', () =>
+  ipcMain.on('minimize', () => mainWindow.minimize())
+  ipcMain.on('maximize', () =>
     mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize()
   )
-  ipcMain.on('windowClose', () => mainWindow.close())
+  ipcMain.on('close', () => mainWindow.close())
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()

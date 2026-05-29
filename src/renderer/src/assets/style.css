@@ -1,0 +1,175 @@
+:root {
+  line-height: 1.5;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --bg: #24282D;
+  --bg-transparent: rgba(36, 40, 45, 0.7);
+  --bg-blur: blur(60px);
+  --surface: #F7F7F2;
+  --surface-muted: #84959A;
+
+  --shadow-dark: #d4d4d0;   /* ~15% darker than --bg */
+  --shadow-light: #ffffff;  /* pure white as the light source */
+
+  --border-light: rgba(247, 247, 242, 0.25);
+
+  --primary: #5B8FB9;
+  --secondary: #5B8FB9;
+  --tertiary: #2F5D50;
+  --quartenary: #D6711E;
+
+  /* Spacing */
+  --radius: 8px;
+  --radius-xs: 8px;
+  --radius-s: 12px;
+  --radius-m: 24px;
+  --radius-l: 48px;
+  --radius-xl: 96px;
+  --radius-xxl: 999px;
+  --gap: 1rem;
+
+  --spacing-xxxxs: .05em;
+  --spacing-xxxs: .1em;
+  --spacing-xxs: .1937em;
+  --spacing-xs: .7937em;
+  --spacing-s: 1em;
+  --spacing-m: 1.2599em;
+  --spacing-l: 1.5874em;
+  --spacing-xl: 2em;
+
+  /* Typography */
+  font-family: DMSans, serif;
+
+  --font-size-tiny: 0.7862em;
+  --font-size-small: 1em;
+  --font-size-normal: 1.272em;
+  --font-size-subheader: 1.618em;
+  --font-size-header: 2.0582em;
+
+  --font-weight-thin: 100;
+  --font-weight-extralight: 200;
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-heavy: 900;
+
+  /* Animations */
+  --animation-fast: 100ms;
+  --animation-normal: 180ms;
+  --animation-slow: 300ms;
+  --animation-vslow: 600ms;
+
+  --divider-color: rgba(255, 255, 255, 0.15);
+
+  /* Fancy */
+  --gradient-color: linear-gradient(90deg,rgba(182, 59, 28, 1) 0%, rgba(235, 175, 23, 1) 100%);
+
+  --gradient-bottom-fade:  linear-gradient(0deg,rgba(0, 0, 0, 1) 0%, rgba(59, 59, 59, 0) 100%);
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body, html, #app {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: transparent;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.vanilla:hover {
+  filter: drop-shadow(0 0 2em #3178c6aa);
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.surface {
+  background: var(--bg-transparent);
+  backdrop-filter: var(--bg-blur);
+  -webkit-backdrop-filter: var(--bg-blur); /* required for Electron/Chrome */
+}
+
+button {
+  background: transparent;
+}
+button:hover {
+  background: var(--border-light);
+}
+button:active {
+  background: var(--surface);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-light);
+  flex-shrink: 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+
+@font-face {
+  font-family: "Open Sans";
+  src: url("fonts/Open_Sans/OpenSans-VariableFont_wdth,wght.ttf") format("truetype");
+}

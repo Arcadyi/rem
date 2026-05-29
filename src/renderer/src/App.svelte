@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Game, Mod } from '../../shared/types'
+  import Titlebar from './components/Titlebar.svelte'
 
   let games: Game[] = []
   let error: string | null = null
@@ -33,78 +34,67 @@
   loadGames()
 </script>
 
-<main class="app-container">
-  {#if error}
-    <p style="color: red">{error}</p>
-  {:else if games.length === 0}
-    <p>Loading...</p>
-  {:else}
-    <div style="display: flex; height: 100vh; gap: 1rem; padding: 1rem; box-sizing: border-box;">
-      <!-- Game list -->
-      <div
-        style="width: 300px; overflow-y: auto; border-right: 1px solid #ccc; padding-right: 1rem; flex-shrink: 0;"
-      >
-        <p>Found {games.length} games</p>
-        <ul style="list-style: none; padding: 0; margin: 0;">
-          {#each games as game (game.appId)}
-            <li>
-              <button
-                onclick={() => loadMods(game)}
-                style="width: 100%; text-align: left; padding: 0.4rem 0.5rem; cursor: pointer;
-                       background: {selectedGame?.appId === game.appId ? '#ddd' : 'transparent'};
-                       border: none; border-radius: 4px;"
-              >
-                <strong>{game.name}</strong>
-                <br />
-                <small style="color: #888">{game.appId}</small>
-              </button>
-            </li>
-          {/each}
-        </ul>
-      </div>
-
-      <!-- Mod list -->
-      <div style="flex: 1; overflow-y: auto;">
-        {#if !selectedGame}
-          <p style="color: #888">Select a game to see its mods</p>
-        {:else if modsLoading}
-          <p>Loading mods for {selectedGame.name}...</p>
-        {:else if modsError}
-          <p style="color: red">{modsError}</p>
-        {:else if mods.length === 0}
-          <p>No mods found for {selectedGame.name}</p>
-        {:else}
-          <p>{mods.length} mods for <strong>{selectedGame.name}</strong></p>
-          <ul style="list-style: none; padding: 0; margin: 0;">
-            {#each mods as mod (mod.itemId)}
-              <li style="padding: 0.5rem 0; border-bottom: 1px solid #eee;">
-                <strong>{mod.name}</strong>
-                <span
-                  style="margin-left: 0.5rem; color: {mod.status === 'upToDate'
-                    ? 'green'
-                    : mod.status === 'outdated'
-                      ? 'orange'
-                      : 'gray'}"
-                >
-                  [{mod.status}]
-                </span>
-                <br />
-                <small>ID: {mod.itemId} — {(mod.sizeBytes / 1024 / 1024).toFixed(1)} MB</small>
-                <br />
-                <small style="color: #888">Local: {mod.localTimestamp.toLocaleString()}</small>
-                <br />
-                <small style="color: #888">Remote: {mod.remoteTimestamp.toLocaleString()}</small>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-      </div>
-    </div>
-  {/if}
-</main>
+<div class="app">
+  <Titlebar />
+</div>
 
 <style>
+  .app {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border-radius: var(--radius-xs);
+    background: var(--bg-transparent);
+    backdrop-filter: var(--bg-blur);
+    -webkit-backdrop-filter: var(--bg-blur);
+    position: relative;
+    z-index: 1;
+  }
+
+  .bg-image {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-repeat: no-repeat;
+    background-position: top center;
+    background-size: 100% auto;
+    opacity: 0.3;
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 80%);
+    mask-image: linear-gradient(to bottom, black 0%, transparent 80%);
+  }
+
   main {
-    background: transparent;
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    padding: var(--spacing-m);
+    gap: var(--spacing-m);
+  }
+
+  .main-loading-screen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    font-family: DM Sans, sans-serif;
+    color: var(--surface);
+    font-size: var(--font-size-subheader);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    gap: var(--spacing-xs);
+    min-width: 0;  /* prevents flex blowout */
   }
 </style>

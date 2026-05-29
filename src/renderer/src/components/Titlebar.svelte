@@ -1,0 +1,110 @@
+<script>
+</script>
+
+<div class="titlebar">
+  <div class="topbar-left">
+    <h1 class="topbar-name">APSYN</h1>
+  </div>
+
+  <div class="topbar-center">
+  </div>
+
+  <div class="topbar-right">
+    <button class="topbar-button" onclick={() => window.api.minimize()}>
+    </button>
+    <button class="topbar-button" onclick={() => window.api.maximize()}>
+    </button>
+    <button class="topbar-button close" onclick={() => window.api.close()}>
+    </button>
+  </div>
+</div>
+<style>
+  .titlebar {
+    display: flex;
+    height: 48px;
+    padding-left: var(--spacing-m);
+    padding-top: var(--spacing-xs);
+    padding-right: var(--spacing-m);
+    padding-bottom: var(--spacing-xs);
+    -webkit-app-region: drag;
+  }
+
+  .topbar-left {
+    width: 20%;
+    display: flex;
+    align-items: center;
+    color: var(--surface);
+    gap: var(--spacing-xxs);
+  }
+  .topbar-center {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--surface);
+  }
+
+  .topbar-right {
+    width: 20%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .topbar-name {
+    font-size: var(--font-size-subheader);
+    font-weight: var(--font-weight-heavy);
+    font-family: DM Sans, sans-serif;
+  }
+
+  .topbar-version {
+    font-size: var(--font-size-tiny);
+    font-weight: var(--font-weight-extralight);
+    font-family: DM Sans, sans-serif;
+    padding: var(--spacing-xxs);
+  }
+
+  .topbar-button {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--border-light);
+    border-radius: 0;
+    cursor: pointer;
+    padding: var(--spacing-xxs);
+    color: var(--surface);
+    transition:
+      background var(--animation-slow),
+      color var(--animation-slow);
+    -webkit-app-region: no-drag;
+  }
+
+  .topbar-button:first-child {
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+  }
+
+  .topbar-button:last-child {
+    border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+  }
+
+
+  .topbar-button:hover {
+    background: var(--border-light);
+  }
+
+  .topbar-right .topbar-button.close:hover {
+    background: var(--primary);
+  }
+
+  .topbar-button:active {
+    background: var(--surface);
+  }
+
+  .topbar-button:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+</style>

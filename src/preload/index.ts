@@ -11,7 +11,11 @@ const api = {}
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld('api', {
+      minimize: () => ipcRenderer.send('minimize'),
+      maximize: () => ipcRenderer.send('maximize'),
+      close: () => ipcRenderer.send('close')
+    })
     contextBridge.exposeInMainWorld('steamAPI', {
       getInstalledGames: () => ipcRenderer.invoke('getInstalledGames'),
       getModsForGame: (game: Game) => ipcRenderer.invoke('getModsForGame', game)
