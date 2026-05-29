@@ -102,3 +102,12 @@
     </div>
   {/if}
 </main>
+
+<style>
+  main {
+    background: transparent;
+  }
+  body {
+    background: transparent;
+  }
+</style>

@@ -12,12 +12,20 @@ function createWindow(): void {
     height: 670,
     show: false,
     autoHideMenuBar: true,
+    frame: false,
+    transparent: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
   })
+
+  ipcMain.on('windowMinimize', () => mainWindow.minimize())
+  ipcMain.on('windowMaximize', () =>
+    mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize()
+  )
+  ipcMain.on('windowClose', () => mainWindow.close())
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -60,6 +68,7 @@ app.whenReady().then(() => {
   ipcMain.handle('getModsForGame', async (_event, game: Game) => {
     return await getModsForGame(game)
   })
+
   createWindow()
 
   app.on('activate', function () {
