@@ -1,26 +1,37 @@
 <script lang="ts">
-  import Versions from './components/Versions.svelte'
-  import electronLogo from './assets/electron.svg'
+  import type { Game } from '../../shared/types'
 
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  let games: Game[] = []
+  let error: string | null = null
+
+  async function loadGames(): Promise<void> {
+    try {
+      games = await window.steamAPI.getInstalledGames()
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  loadGames()
 </script>
 
-<img alt="logo" class="logo" src={electronLogo} />
-<div class="creator">Powered by electron-vite</div>
-<div class="text">
-  Build an Electron app with
-  <span class="svelte">Svelte</span>
-  and
-  <span class="ts">TypeScript</span>
-</div>
-<p class="tip">Please try pressing <code>F12</code> to open the devTool</p>
-<div class="actions">
-  <div class="action">
-    <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">Documentation</a>
-  </div>
-  <div class="action">
-    <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions a11y-missing-attribute-->
-    <a target="_blank" rel="noreferrer" on:click={ipcHandle}>Send IPC</a>
-  </div>
-</div>
-<Versions />
+<main>
+  {#if error}
+    <p style="color: red">{error}</p>
+  {:else if games.length === 0}
+    <p>Loading...</p>
+  {:else}
+    <p>Found {games.length} games</p>
+    <ul>
+      {#each games as game (game.appId)}
+        <li>
+          <strong>[{game.appId}]</strong> {game.name}
+          <br />
+          <small>{game.path}</small>
+          <br />
+          <small>Workshop: {game.workshopPath}</small>
+        </li>
+      {/each}
+    </ul>
+  {/if}
+</main>
