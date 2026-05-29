@@ -33,7 +33,7 @@
   loadGames()
 </script>
 
-<main>
+<main class="app-container">
   {#if error}
     <p style="color: red">{error}</p>
   {:else if games.length === 0}
@@ -105,9 +105,6 @@
 
 <style>
   main {
-    background: transparent;
-  }
-  body {
     background: transparent;
   }
 </style>
