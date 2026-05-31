@@ -6,7 +6,6 @@
 
   let {
     mod,
-    appId,
     selected = false,
     compact = true,
     onselect,
@@ -14,7 +13,6 @@
     onunsubscribe
   } = $props<{
     mod: Mod
-    appId: number
     selected?: boolean
     compact?: boolean
     onselect: () => void
@@ -229,17 +227,6 @@
   }
   .mod-card.status-outdated.selected {
     background: color-mix(in hsl, var(--primary) 60%, transparent);
-    border: 1px solid var(--primary);
-  }
-
-  .mod-card.status-missing {
-    background: color-mix(in hsl, var(--primary) 15%, transparent);
-  }
-  .mod-card.status-missing:hover {
-    background: color-mix(in hsl, var(--primary) 30%, transparent);
-  }
-  .mod-card.status-missing.selected {
-    background: color-mix(in hsl, var(--primary) 80%, transparent);
     border: 1px solid var(--primary);
   }
 

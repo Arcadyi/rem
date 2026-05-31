@@ -135,7 +135,6 @@
     {#each filteredMods as mod (mod.itemId)}
       <ModCard
         {mod}
-        appId={selectedGame?.appId ?? 0}
         selected={selectedIds.has(mod.itemId)}
         {compact}
         onselect={() => toggleMod(mod.itemId)}
