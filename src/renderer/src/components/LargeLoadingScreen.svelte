@@ -2,7 +2,11 @@
 <script lang="ts">
   import Loader from './Loader.svelte'
 
-  let { status, steamRunning, restarting } = $props<{
+  let {
+    status,
+    steamRunning,
+    restarting: restartSteam
+  } = $props<{
     status: string | null
     steamRunning: boolean
     restarting: boolean
@@ -13,11 +17,11 @@
 <div class="large-loading-screen">
   <Loader />
   {#if steamRunning}
-    {#if restarting}
+    {#if restartSteam}
       <span>Closing Steam, please wait...</span>
     {:else}
       <span>Could not read cookies while Steam is running.</span>
-      <button class="pill-button">Restart Steam</button>
+      <button class="pill-button" onclick={restartSteam}>Restart Steam</button>
     {/if}
   {:else if status}
     <span>{status}</span>
