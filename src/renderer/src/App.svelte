@@ -30,7 +30,7 @@
 
   let searchQuery = $state('')
   let modListSelectedCount = $state(0)
-  let modListRefresh = $state<() => void>(() => {})
+  let modListRefresh = $state<() => void>(() => refreshMods())
   let modListSelectAll = $state<() => void>(() => {})
   let modListDeselectAll = $state<() => void>(() => {})
   let modListRedownload = $state<() => Promise<void>>(async () => {})
@@ -100,6 +100,27 @@
 
       // Refresh currently visible mods if a game is selected
       if (selectedGame) mods = modsCache.get(selectedGame.appId) ?? []
+    } catch (e) {
+      status = e instanceof Error ? e.message : String(e)
+    } finally {
+      modsLoading = false
+    }
+  }
+
+  async function refreshMods(): Promise<void> {
+    if (!selectedGame) return
+    modsLoading = true
+    try {
+      const game = $state.snapshot(selectedGame) as Game
+      const freshMods = await window.steamAPI.getModsForGameLocal(game)
+      const enriched = await window.steamAPI.enrichMods(freshMods)
+      const enrichedMods = freshMods.map((m) => ({
+        ...m,
+        name: enriched[m.itemId]?.name ?? m.name,
+        previewUrl: enriched[m.itemId]?.previewUrl ?? null
+      }))
+      modsCache.set(selectedGame.appId, enrichedMods)
+      mods = enrichedMods
     } catch (e) {
       status = e instanceof Error ? e.message : String(e)
     } finally {

@@ -82,10 +82,6 @@
     selectedIds.clear()
   }
 
-  refresh = () => {
-    // Will be overridden by parent if needed
-  }
-
   redownloadSelected = async () => {
     if (!selectedGame) return
     const selectedMods = filteredMods.filter((m: { itemId: number }) => selectedIds.has(m.itemId))
@@ -123,8 +119,14 @@
         selected={selectedIds.has(mod.itemId)}
         {compact}
         onselect={() => toggleMod(mod.itemId)}
-        onredownload={() => window.steamAPI.redownloadMods([$state.snapshot(mod) as Mod], selectedGame!.appId)}
-        onunsubscribe={() => window.steamAPI.unsubscribeMods([$state.snapshot(mod) as Mod], selectedGame!.appId)}
+        onredownload={() =>
+          window.steamAPI
+            .redownloadMods([$state.snapshot(mod) as Mod], selectedGame!.appId)
+            .then(() => refresh())}
+        onunsubscribe={() =>
+          window.steamAPI
+            .unsubscribeMods([$state.snapshot(mod) as Mod], selectedGame!.appId)
+            .then(() => refresh())}
       />
     {/each}
   {/if}

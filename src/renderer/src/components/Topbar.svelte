@@ -10,7 +10,6 @@
     someSelected = false,
     selectedGame,
     selectedCount,
-    totalCount,
     loading,
     searchQuery = $bindable(''),
     onSelectAll,
