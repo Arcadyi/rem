@@ -48,7 +48,9 @@
 
   const filteredMods = $derived(
     searchQuery.trim()
-      ? mods.filter((m) => m.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+      ? mods.filter((m: { name: string }) =>
+          m.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+        )
       : mods
   )
 
@@ -58,10 +60,11 @@
   }
 
   const _allSelected = $derived(
-    filteredMods.length > 0 && filteredMods.every((m) => selectedIds.has(m.itemId))
+    filteredMods.length > 0 &&
+      filteredMods.every((m: { itemId: number }) => selectedIds.has(m.itemId))
   )
   const _someSelected = $derived(
-    filteredMods.some((m) => selectedIds.has(m.itemId)) && !_allSelected
+    filteredMods.some((m: { itemId: number }) => selectedIds.has(m.itemId)) && !_allSelected
   )
 
   $effect(() => {
@@ -72,7 +75,7 @@
   })
 
   selectAll = () => {
-    filteredMods.forEach((m) => selectedIds.add(m.itemId))
+    filteredMods.forEach((m: { itemId: number }) => selectedIds.add(m.itemId))
   }
 
   deselectAll = () => {
@@ -84,11 +87,20 @@
   }
 
   redownloadSelected = async () => {
-    // Implement with Steam API calls once ready
+    if (!selectedGame) return
+    const selectedMods = filteredMods.filter((m: { itemId: number }) => selectedIds.has(m.itemId))
+    await window.steamAPI.redownloadMods($state.snapshot(selectedMods) as Mod[], selectedGame.appId)
+    selectedIds.clear()
   }
 
   unsubscribeSelected = async () => {
-    // Implement with Steam API calls once ready
+    if (!selectedGame) return
+    const selectedMods = filteredMods.filter((m: { itemId: number }) => selectedIds.has(m.itemId))
+    await window.steamAPI.unsubscribeMods(
+      $state.snapshot(selectedMods) as Mod[],
+      selectedGame.appId
+    )
+    selectedIds.clear()
   }
 </script>
 
@@ -107,11 +119,12 @@
     {#each filteredMods as mod (mod.itemId)}
       <ModCard
         {mod}
+        appId={selectedGame?.appId ?? 0}
         selected={selectedIds.has(mod.itemId)}
         {compact}
         onselect={() => toggleMod(mod.itemId)}
-        onredownload={() => refresh()}
-        onunsubscribe={() => refresh()}
+        onredownload={() => window.steamAPI.redownloadMods([$state.snapshot(mod) as Mod], selectedGame!.appId)}
+        onunsubscribe={() => window.steamAPI.unsubscribeMods([$state.snapshot(mod) as Mod], selectedGame!.appId)}
       />
     {/each}
   {/if}

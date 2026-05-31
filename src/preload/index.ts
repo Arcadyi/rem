@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { Game, Mod } from '../shared/types'
+import type { Game, Mod } from '../shared/types'
 
 // Custom APIs for renderer
 const api = {}
@@ -28,7 +28,13 @@ if (process.contextIsolated) {
       debugSteamPaths: () => ipcRenderer.invoke('debugSteamPaths'),
       debugGameImageFiles: () => ipcRenderer.invoke('debugGameImageFiles'),
       clearCookieCache: () => ipcRenderer.invoke('clearCookieCache'),
-      getGameImages: (appId: number) => ipcRenderer.invoke('getGameImages', appId)
+      getGameImages: (appId: number) => ipcRenderer.invoke('getGameImages', appId),
+      openModPage: (itemId: number) => ipcRenderer.invoke('openModPage', itemId),
+      openModDirectory: (modPath: string) => ipcRenderer.invoke('openModDirectory', modPath),
+      unsubscribeMods: (mods: Mod[], appId: number) =>
+        ipcRenderer.invoke('unsubscribeMods', mods, appId),
+      redownloadMods: (mods: Mod[], appId: number) =>
+        ipcRenderer.invoke('redownloadMods', mods, appId)
     })
   } catch (error) {
     console.error(error)

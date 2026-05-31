@@ -1,6 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import type { Game, GameImages, Mod, SteamCookies } from '../shared/types'
-import { enrichModsWithRemoteInfo, getModsForGameLocal } from '../main/steam'
+import type { Game, GameImages, Mod, SteamCookies, WorkshopActionResult } from '../shared/types'
 
 declare global {
   interface Window {
@@ -23,6 +22,10 @@ declare global {
       debugSteamPaths: () => Promise<void>
       debugGameImageFiles: () => Promise<void>
       getGameImages: (appId: number) => Promise<GameImages>
+      openModPage: (itemId: number) => Promise<void>
+      openModDirectory: (modPath: string) => Promise<void>
+      unsubscribeMods: (mods: Mod[], appId: number) => Promise<WorkshopActionResult[]>
+      redownloadMods: (mods: Mod[], appId: number) => Promise<WorkshopActionResult[]>
     }
   }
 }

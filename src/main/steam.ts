@@ -24,7 +24,7 @@ interface VdfNode {
   [key: string]: VdfValue
 }
 
-function parseVdf(content: string): VdfNode {
+export function parseVdf(content: string): VdfNode {
   const tokens = tokeniseVdf(content)
   const [node] = parseVdfNode(tokens, 0)
   return node

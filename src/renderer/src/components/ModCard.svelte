@@ -6,10 +6,15 @@
 
   let {
     mod,
+    appId,
     selected = false,
     compact = true,
-    onselect  } = $props<{
+    onselect,
+    onredownload,
+    onunsubscribe
+  } = $props<{
     mod: Mod
+    appId: number
     selected?: boolean
     compact?: boolean
     onselect: () => void
@@ -27,10 +32,30 @@
   const statusConfig = {
     upToDate: { color: 'var(--tertiary)', label: 'Up to date' },
     outdated: { color: 'var(--primary)', label: 'Out of Date' },
-    unknown: { color: 'var(--quartenary', label: 'Unknown' }
+    unknown: { color: 'var(--quartenary)', label: 'Unknown' }
   } satisfies Record<Mod['status'], { color: string; label: string }>
 
-  let status = $derived(statusConfig[mod.status as Mod['status']] ?? statusConfig['unknown'])
+  let status = $derived(statusConfig[mod.status] ?? statusConfig.unknown)
+
+  async function handleOpenPage(e: MouseEvent): Promise<void> {
+    e.stopPropagation()
+    await window.steamAPI.openModPage(mod.itemId)
+  }
+
+  async function handleOpenFolder(e: MouseEvent): Promise<void> {
+    e.stopPropagation()
+    await window.steamAPI.openModDirectory(mod.path)
+  }
+
+  async function handleRedownload(e: MouseEvent): Promise<void> {
+    e.stopPropagation()
+    onredownload?.()
+  }
+
+  async function handleUnsubscribe(e: MouseEvent): Promise<void> {
+    e.stopPropagation()
+    onunsubscribe?.()
+  }
 </script>
 
 <div
@@ -39,8 +64,7 @@
   class:compact
   class:status-outdated={mod.status === 'outdated'}
   class:status-unknown={mod.status === 'unknown'}
-  class:status-missing={mod.status === 'missing'}
-  class:status-ok={mod.status === 'up-to-date'}
+  class:status-ok={mod.status === 'upToDate'}
   onclick={onselect}
   role="button"
   tabindex="0"
@@ -63,7 +87,7 @@
 
     {#if !compact}
       <span class="mod-meta">
-        ID: {mod.workshopId} • {formatSize(mod.sizeBytes)}
+        ID: {mod.itemId} • {formatSize(mod.sizeBytes)}
       </span>
       <span class="mod-meta">
         <IconaFolderFill />
@@ -77,7 +101,12 @@
   </div>
 
   <div class="mod-actions">
-    <button class="action-btn" title="Open on Steam" aria-label="Open on Steam">
+    <button
+      class="action-btn"
+      title="Open on Steam"
+      aria-label="Open on Steam"
+      onclick={handleOpenPage}
+    >
       <svg
         width="14"
         height="14"
@@ -97,7 +126,8 @@
       class="action-btn"
       title="Open folder"
       aria-label="Open folder"
-      disabled={!mod.localPath}
+      onclick={handleOpenFolder}
+      disabled={!mod.path}
     >
       <svg
         width="14"
@@ -112,7 +142,12 @@
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
       </svg>
     </button>
-    <button class="action-btn" title="Force redownload" aria-label="Force redownload">
+    <button
+      class="action-btn"
+      title="Force redownload"
+      aria-label="Force redownload"
+      onclick={handleRedownload}
+    >
       <svg
         width="14"
         height="14"
@@ -127,7 +162,12 @@
         <path d="M3.51 15a9 9 0 1 0 .49-3.51" />
       </svg>
     </button>
-    <button class="action-btn danger" title="Unsubscribe" aria-label="Unsubscribe">
+    <button
+      class="action-btn danger"
+      title="Unsubscribe"
+      aria-label="Unsubscribe"
+      onclick={handleUnsubscribe}
+    >
       <svg
         width="14"
         height="14"

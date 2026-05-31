@@ -17,6 +17,7 @@ import * as os from 'node:os'
 import path from 'node:path'
 import * as fs from 'node:fs'
 import { pathToFileURL } from 'node:url'
+import { openModDirectory, openModPage, redownloadMods, unsubscribeFromMods } from './steamWorkshop'
 
 function shutdownSteamAsync(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -151,6 +152,26 @@ app.whenReady().then(() => {
     return { dir, files }
   })
   ipcMain.handle('getGameImages', (_event, appId: number) => getGameImages(appId))
+  ipcMain.handle('unsubscribeMods', async (_e, mods: Mod[], appId: number) => {
+    const cookies = getSteamCookies()
+    const acfPath = path.join(
+      path.dirname(path.dirname(path.dirname(mods[0].path))),
+      `appworkshop_${appId}.acf`
+    )
+    return unsubscribeFromMods(mods, appId, acfPath, cookies)
+  })
+
+  ipcMain.handle('redownloadMods', async (_e, mods: Mod[], appId: number) => {
+    const cookies = getSteamCookies()
+    const acfPath = path.join(
+      path.dirname(path.dirname(path.dirname(mods[0].path))),
+      `appworkshop_${appId}.acf`
+    )
+    return redownloadMods(mods, appId, acfPath, cookies)
+  })
+
+  ipcMain.handle('openModDirectory', (_e, modPath: string) => openModDirectory(modPath))
+  ipcMain.handle('openModPage', (_e, itemId: number) => openModPage(itemId))
   createWindow()
 
   app.on('activate', function () {
