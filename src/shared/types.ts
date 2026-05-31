@@ -15,11 +15,16 @@ export interface Mod {
   itemId: number
   name: string
   path: string
-  localTimestamp: Date
-  remoteTimestamp: Date
+  localTimestamp: number
+  remoteTimestamp: number
   status: ModStatus
   sizeBytes: number
-  previewUrl?: string
+  previewUrl: string | null
+}
+
+export interface WorkshopItemInfo {
+  name: string
+  previewUrl: string | null
 }
 
 export interface PlaylistModEntry {

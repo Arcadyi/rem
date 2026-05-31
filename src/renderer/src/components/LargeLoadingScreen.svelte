@@ -2,7 +2,7 @@
 <script lang="ts">
   import Loader from './Loader.svelte'
 
-  let { status, steamRunning, restarting, onrestart } = $props<{
+  let { status, steamRunning, restarting } = $props<{
     status: string | null
     steamRunning: boolean
     restarting: boolean

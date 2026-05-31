@@ -4,15 +4,24 @@
   import Sidebar from './components/Sidebar.svelte'
   import { onMount } from 'svelte'
   import LargeLoadingScreen from './components/LargeLoadingScreen.svelte'
+  import ModList from './components/ModList.svelte'
+  import { SvelteMap } from 'svelte/reactivity'
+  import { fade } from 'svelte/transition'
+  import Topbar from './components/Topbar.svelte'
+  import BottomBar from './components/BottomBar.svelte'
 
   let gamesLoading = $state<boolean>(true)
   let status = $state<string | null>(null)
   let games = $state<Game[]>([])
+  let gameBg = $state<string | null>(null)
   let selectedGame = $state<Game | null>(null)
   let mods = $state<Mod[]>([])
   let modsLoading = $state(false)
   let modsError = $state<string | null>(null)
-
+  let modListAllSelected = $state(false)
+  let modListSomeSelected = $state(false)
+  let modsCache = new SvelteMap<number, Mod[]>()
+  let cacheReady = $state(false)
 
   let steamRunning = $state(false)
   let cookiesRetryInterval: ReturnType<typeof setInterval> | null = null
@@ -22,13 +31,23 @@
   let cookiesLoading = $state(false)
   let cookiesError = $state<string | null>(null)
 
-  async function loadGames(): Promise<void> {
+  let searchQuery = $state('')
+  let modListSelectedCount = $state(0)
+  let modListRefresh = $state<() => void>(() => {})
+  let modListSelectAll = $state<() => void>(() => {})
+  let modListDeselectAll = $state<() => void>(() => {})
+  let modListRedownload = $state<() => Promise<void>>(async () => {})
+  let modListUnsubscribe = $state<() => Promise<void>>(async () => {})
+
+  async function loadGames(): Promise<Game[]> {
     gamesLoading = true
     try {
       status = 'Loading Games'
       games = await window.steamAPI.getInstalledGames()
+      return games
     } catch (e) {
       status = e instanceof Error ? e.message : String(e)
+      return []
     } finally {
       gamesLoading = false
       status = null
@@ -37,16 +56,54 @@
 
   $effect(() => {
     if (selectedGame) {
-      loadMods(selectedGame)
+      mods = modsCache.get(selectedGame.appId) ?? []
+      window.steamAPI.getGameImages(selectedGame.appId).then((images) => {
+        gameBg = images.hero
+      })
     }
   })
 
-  async function loadMods(game: Game): Promise<void> {
-    mods = []
-    modsError = null
+  async function preloadAllMods(games: Game[]): Promise<void> {
     modsLoading = true
     try {
-      mods = await window.steamAPI.getModsForGame(game)
+      // Load all local mods in parallel
+      const results = await Promise.all(
+        games.map(async (game) => ({
+          appId: game.appId,
+          mods: await window.steamAPI.getModsForGameLocal($state.snapshot(game) as Game)
+        }))
+      )
+
+      // Populate cache with local data immediately
+      const cache = new SvelteMap<number, Mod[]>()
+      for (const { appId, mods } of results) cache.set(appId, mods)
+      modsCache = cache
+
+      // Show mods for selected game right away
+      if (selectedGame) mods = modsCache.get(selectedGame.appId) ?? []
+      modsLoading = false
+
+      // Enrich all mods in one batched request
+      const allMods = results.flatMap((r) => r.mods)
+      const enriched = await window.steamAPI.enrichMods($state.snapshot(allMods) as Mod[])
+
+      // Update cache with enriched data
+      const enrichedCache = new SvelteMap<number, Mod[]>()
+      for (const { appId, mods } of results) {
+        enrichedCache.set(
+          appId,
+          mods.map((m) => ({
+            ...m,
+            name: enriched[m.itemId]?.name ?? m.name,
+            previewUrl: enriched[m.itemId]?.previewUrl ?? null
+          }))
+        )
+      }
+      modsCache = enrichedCache
+      cacheReady = true
+
+      // Refresh currently visible mods if a game is selected
+      if (selectedGame) mods = modsCache.get(selectedGame.appId) ?? []
     } catch (e) {
       modsError = e instanceof Error ? e.message : String(e)
     } finally {
@@ -100,19 +157,63 @@
   }
 
   onMount(async () => {
-    await loadGames()
     await loadCookies()
+    await loadGames()
+    await preloadAllMods(games)
   })
 </script>
 
 <div class="app">
+  {#if gameBg}
+    {#key gameBg}
+      <div
+        class="bg-image"
+        style="background-image: url('{gameBg}')"
+        transition:fade={{ duration: 600 }}
+      ></div>
+    {/key}
+  {/if}
   <Titlebar />
   {#if gamesLoading || cookiesLoading || steamRunning}
     <LargeLoadingScreen {status} {steamRunning} {restarting} onrestart={restartSteam} />
   {:else}
     <main>
       <Sidebar {games} bind:selectedGame />
-      <div class="content"></div>
+      <div class="content">
+        {#if selectedGame}
+          <Topbar
+            allSelected={modListAllSelected}
+            someSelected={modListSomeSelected}
+            {selectedGame}
+            selectedCount={modListSelectedCount}
+            totalCount={mods.length}
+            loading={modsLoading}
+            bind:searchQuery
+            onSelectAll={modListSelectAll}
+            onDeselectAll={modListDeselectAll}
+            onRefresh={modListRefresh}
+          />
+          <ModList
+            bind:allSelected={modListAllSelected}
+            bind:someSelected={modListSomeSelected}
+            {selectedGame}
+            {mods}
+            {searchQuery}
+            loading={modsLoading}
+            bind:selectedCount={modListSelectedCount}
+            bind:refresh={modListRefresh}
+            bind:selectAll={modListSelectAll}
+            bind:deselectAll={modListDeselectAll}
+            bind:redownloadSelected={modListRedownload}
+            bind:unsubscribeSelected={modListUnsubscribe}
+          />
+          <BottomBar
+            selectedCount={modListSelectedCount}
+            onRedownload={modListRedownload}
+            onUnsubscribe={modListUnsubscribe}
+          />
+        {/if}
+      </div>
     </main>
   {/if}
 </div>

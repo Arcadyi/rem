@@ -3,8 +3,15 @@ import { join } from 'path'
 import { Worker } from 'worker_threads'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { getGameImages, getInstalledGames, getModsForGame, getSteamPath } from './steam'
-import { Game } from '../shared/types'
+import {
+  enrichModsWithRemoteInfo,
+  getGameImages,
+  getInstalledGames,
+  getModsForGame,
+  getModsForGameLocal,
+  getSteamPath
+} from './steam'
+import { Game, Mod } from '../shared/types'
 import { clearCookieCache, getSteamCookies, isSteamRunning, startSteam } from './cookies'
 import * as os from 'node:os'
 import path from 'node:path'
@@ -99,6 +106,15 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('getModsForGame', async (_event, game: Game) => {
     return await getModsForGame(game)
+  })
+
+  ipcMain.handle('getModsForGameLocal', async (_event, game: Game) => {
+    return await getModsForGameLocal(game)
+  })
+
+  ipcMain.handle('enrichMods', async (_event, mods: Mod[]) => {
+    const info = await enrichModsWithRemoteInfo(mods)
+    return Object.fromEntries(info)
   })
 
   ipcMain.handle('isSteamRunning', () => isSteamRunning())

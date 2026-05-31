@@ -165,17 +165,20 @@ button:active {
 
 .pill-button {
   border-radius: var(--radius-xl);
-  border: 1px solid var(--surface);
+  border: 1px solid var(--border-light);
   font-family: "Open Sans", sans-serif;
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-medium);
-  padding: var(--spacing-xs) var(--spacing-xs);
-  color: var(--surface);
-  transition: background var(--animation-slow);
+  padding: var(--spacing-xxs) var(--spacing-xs);
+  color: var(--surface-muted);
+  transition:
+    color var(--animation-slow),
+    background var(--animation-slow);
 }
 
 .pill-button:hover {
   background: var(--surface-muted) ;
+  color: var(--surface);
 }
 
 .pill-button:active {

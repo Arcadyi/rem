@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
 import { execSync } from 'child_process'
-import type { Game, GameImages, Mod, ModStatus } from '../shared/types'
+import type { Game, GameImages, Mod, ModStatus, WorkshopItemInfo } from '../shared/types'
 
 const IGNORED_APP_IDS = new Set([
   228980, // Steamworks Common Redistributables
@@ -283,10 +283,7 @@ export async function getInstalledGames(): Promise<Game[]> {
   return unique
 }
 
-// ---------------------------------------------------------------------------
 // Workshop mod retrieval
-// ---------------------------------------------------------------------------
-
 interface WorkshopItemMeta {
   remoteTimestamp: Date
   sizeBytes: number
@@ -330,20 +327,13 @@ function parseWorkshopAcf(acfPath: string): Map<number, WorkshopItemMeta> {
   return result
 }
 
-/**
- * Fetches workshop item titles from the Steam Web API in batches.
- * Does not require an API key.
- */
-async function fetchWorkshopItemNames(itemIds: number[]): Promise<Map<number, string>> {
-  const names = new Map<number, string>()
-  if (itemIds.length === 0) return names
+async function fetchWorkshopItemInfo(itemIds: number[]): Promise<Map<number, WorkshopItemInfo>> {
+  const result = new Map<number, WorkshopItemInfo>()
+  if (itemIds.length === 0) return result
 
-  // The API accepts up to 100 items per request
   const BATCH_SIZE = 100
-
   for (let i = 0; i < itemIds.length; i += BATCH_SIZE) {
     const batch = itemIds.slice(i, i + BATCH_SIZE)
-
     const body = new URLSearchParams()
     body.append('itemcount', String(batch.length))
     batch.forEach((id, idx) => body.append(`publishedfileids[${idx}]`, String(id)))
@@ -356,19 +346,23 @@ async function fetchWorkshopItemNames(itemIds: number[]): Promise<Map<number, st
       if (!res.ok) continue
 
       const json = await res.json()
-      const details: Array<{ publishedfileid: string; title?: string }> =
+      const details: Array<{ publishedfileid: string; title?: string; preview_url?: string }> =
         json?.response?.publishedfiledetails ?? []
 
       for (const item of details) {
         const id = parseInt(item.publishedfileid, 10)
-        if (!isNaN(id) && item.title) names.set(id, item.title)
+        if (!isNaN(id)) {
+          result.set(id, {
+            name: item.title ?? String(id),
+            previewUrl: item.preview_url ?? null
+          })
+        }
       }
     } catch {
-      // Network unavailable — names will fall back to the itemId string
+      // fall back to itemId string
     }
   }
-
-  return names
+  return result
 }
 
 /**
@@ -395,8 +389,6 @@ export async function getModsForGame(game: Game): Promise<Mod[]> {
 
   const modDirs = entries.filter((e) => e.isDirectory() && /^\d+$/.test(e.name))
   const itemIds = modDirs.map((e) => parseInt(e.name, 10))
-
-  const names = await fetchWorkshopItemNames(itemIds)
 
   const mods: Mod[] = []
 
@@ -425,9 +417,66 @@ export async function getModsForGame(game: Game): Promise<Mod[]> {
       status = 'outdated'
     }
 
+    const info = await fetchWorkshopItemInfo(itemIds)
+
     mods.push({
       itemId,
-      name: names.get(itemId) ?? String(itemId),
+      name: info.get(itemId)?.name ?? String(itemId),
+      previewUrl: info.get(itemId)?.previewUrl ?? null,
+      path: modPath,
+      localTimestamp: localTimestamp.getTime(),
+      remoteTimestamp: remoteTimestamp.getTime(),
+      status,
+      sizeBytes
+    })
+  }
+
+  mods.sort((a, b) => a.name.localeCompare(b.name))
+  return mods
+}
+
+export async function getModsForGameLocal(game: Game): Promise<Mod[]> {
+  const { workshopPath, appId } = game
+  if (!fs.existsSync(workshopPath)) return []
+
+  const steamappsDir = path.resolve(workshopPath, '..', '..', '..')
+  const acfPath = path.join(steamappsDir, 'workshop', `appworkshop_${appId}.acf`)
+  const workshopMeta = parseWorkshopAcf(acfPath)
+
+  let entries: fs.Dirent[]
+  try {
+    entries = fs.readdirSync(workshopPath, { withFileTypes: true })
+  } catch {
+    return []
+  }
+
+  const modDirs = entries.filter((e) => e.isDirectory() && /^\d+$/.test(e.name))
+
+  const mods: Mod[] = []
+  for (const dir of modDirs) {
+    const itemId = parseInt(dir.name, 10)
+    const modPath = path.join(workshopPath, dir.name)
+    const meta = workshopMeta.get(itemId)
+
+    let localTimestamp: number
+    try {
+      localTimestamp = fs.statSync(modPath).mtime.getTime()
+    } catch {
+      localTimestamp = 0
+    }
+
+    const remoteTimestamp = meta?.remoteTimestamp.getTime() ?? 0
+    const sizeBytes = meta?.sizeBytes ?? 0
+
+    let status: ModStatus
+    if (remoteTimestamp === 0) status = 'unknown'
+    else if (localTimestamp >= remoteTimestamp) status = 'upToDate'
+    else status = 'outdated'
+
+    mods.push({
+      itemId,
+      name: String(itemId), // placeholder until remote info loads
+      previewUrl: null,
       path: modPath,
       localTimestamp,
       remoteTimestamp,
@@ -438,6 +487,13 @@ export async function getModsForGame(game: Game): Promise<Mod[]> {
 
   mods.sort((a, b) => a.name.localeCompare(b.name))
   return mods
+}
+
+export async function enrichModsWithRemoteInfo(
+  mods: Mod[]
+): Promise<Map<number, { name: string; previewUrl: string | null }>> {
+  const itemIds = mods.map((m) => m.itemId)
+  return await fetchWorkshopItemInfo(itemIds)
 }
 
 export function getGameImages(appId: number): GameImages {

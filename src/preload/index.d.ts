@@ -1,5 +1,6 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import type { Game, GameImages, Mod, SteamCookies } from '../shared/types'
+import { enrichModsWithRemoteInfo, getModsForGameLocal } from '../main/steam'
 
 declare global {
   interface Window {
@@ -12,6 +13,8 @@ declare global {
     steamAPI: {
       getInstalledGames: () => Promise<Game[]>
       getModsForGame: (game: Game) => Promise<Mod[]>
+      getModsForGameLocal: (game: Game) => Promise<Mod[]>
+      enrichMods: (mods: Mod[]) => Promise<Map<number, { name: string; previewUrl: string | null }>>
       isSteamRunning: () => Promise<boolean>
       shutdownSteam: () => Promise<void>
       startSteam: () => Promise<void>
