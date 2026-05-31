@@ -15,6 +15,7 @@ declare global {
       isSteamRunning: () => Promise<boolean>
       shutdownSteam: () => Promise<void>
       startSteam: () => Promise<void>
+      clearCookieCache: () => Promise<void>
       getSteamCookies: () => Promise<SteamCookies>
     }
   }

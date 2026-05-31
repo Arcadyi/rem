@@ -5,7 +5,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { getInstalledGames, getModsForGame } from './steam'
 import { Game } from '../shared/types'
-import { getSteamCookies, isSteamRunning, startSteam } from './cookies'
+import { clearCookieCache, getSteamCookies, isSteamRunning, startSteam } from './cookies'
 
 function shutdownSteamAsync(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -92,6 +92,7 @@ app.whenReady().then(() => {
   ipcMain.handle('getSteamCookies', () => getSteamCookies())
   ipcMain.handle('shutdownSteam', () => shutdownSteamAsync())
   ipcMain.handle('startSteam', () => startSteam())
+  ipcMain.handle('clearCookieCache', () => clearCookieCache())
   createWindow()
 
   app.on('activate', function () {

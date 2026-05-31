@@ -22,7 +22,8 @@ if (process.contextIsolated) {
       isSteamRunning: () => ipcRenderer.invoke('isSteamRunning'),
       shutdownSteam: () => ipcRenderer.invoke('shutdownSteam'),
       startSteam: () => ipcRenderer.invoke('startSteam'),
-      getSteamCookies: () => ipcRenderer.invoke('getSteamCookies')
+      getSteamCookies: () => ipcRenderer.invoke('getSteamCookies'),
+      clearCookieCache: () => ipcRenderer.invoke('clearCookieCache')
     })
   } catch (error) {
     console.error(error)

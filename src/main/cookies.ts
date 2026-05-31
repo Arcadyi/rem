@@ -5,6 +5,7 @@ import * as crypto from 'crypto'
 import { execSync, spawnSync, spawn } from 'child_process'
 import Database from 'better-sqlite3'
 import { SteamCookies } from '../shared/types'
+import { app, safeStorage } from 'electron'
 
 export function isSteamRunning(): boolean {
   try {
@@ -337,25 +338,63 @@ function readCookies(dbPath: string): SteamCookies {
   }
 }
 
-
 /**
  * Reads Steam session cookies.
  */
 export function getSteamCookies(): SteamCookies {
+  // Try cache first
+  const cached = loadCookieCache()
+  if (cached) return cached
+
   const dbPath = getCookieDbPath()
 
-  // Try reading directly first — works if Steam's browser hasn't locked the DB
+  // Try direct read
   try {
-    return readCookies(dbPath)
+    const cookies = readCookies(dbPath)
+    saveCookieCache(cookies)
+    return cookies
   } catch {
-    // DB is locked or unreadable with Steam running
+    // DB locked
   }
 
-  // Only prompt restart if direct read failed
   if (isSteamRunning()) {
     throw new Error('STEAM_RUNNING')
   }
 
-  // Steam isn't running but we still couldn't read — rethrow the real error
   throw new Error('Failed to read Steam cookies — try restarting Steam')
+}
+
+function getCachePath(): string {
+  return path.join(app.getPath('userData'), 'cookies.enc')
+}
+
+function saveCookieCache(cookies: SteamCookies): void {
+  if (!safeStorage.isEncryptionAvailable()) return
+  try {
+    const json = JSON.stringify(cookies)
+    const encrypted = safeStorage.encryptString(json)
+    fs.writeFileSync(getCachePath(), encrypted)
+  } catch {
+    // Cache write failed — non-fatal, we'll just re-read next time
+  }
+}
+
+function loadCookieCache(): SteamCookies | null {
+  if (!safeStorage.isEncryptionAvailable()) return null
+  try {
+    const encrypted = fs.readFileSync(getCachePath())
+    const json = safeStorage.decryptString(encrypted)
+    return JSON.parse(json) as SteamCookies
+  } catch {
+    // Cache missing or corrupt — treat as cold start
+    return null
+  }
+}
+
+export function clearCookieCache(): void {
+  try {
+    fs.unlinkSync(getCachePath())
+  } catch {
+    /* already gone */
+  }
 }

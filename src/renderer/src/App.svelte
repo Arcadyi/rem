@@ -3,9 +3,10 @@
   import Titlebar from './components/Titlebar.svelte'
   import Sidebar from './components/Sidebar.svelte'
   import { onMount } from 'svelte'
+  import LargeLoadingScreen from './components/LargeLoadingScreen.svelte'
 
   let gamesLoading = $state<boolean>(true)
-  let error = $state<string | null>(null)
+  let status = $state<string | null>(null)
   let games = $state<Game[]>([])
   let selectedGame = $state<Game | null>(null)
   let mods = $state<Mod[]>([])
@@ -24,11 +25,13 @@
   async function loadGames(): Promise<void> {
     gamesLoading = true
     try {
+      status = 'Loading Games'
       games = await window.steamAPI.getInstalledGames()
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e)
+      status = e instanceof Error ? e.message : String(e)
     } finally {
       gamesLoading = false
+      status = null
     }
   }
 
@@ -55,6 +58,7 @@
     cookiesLoading = true
     cookiesError = null
     try {
+      status = 'Loading Cookies'
       cookies = await window.steamAPI.getSteamCookies()
       steamRunning = false
     } catch (e) {
@@ -72,6 +76,7 @@
         }, 3000)
       } else {
         cookiesError = msg
+        status = msg
       }
     } finally {
       cookiesLoading = false
@@ -81,9 +86,11 @@
   async function restartSteam(): Promise<void> {
     restarting = true
     try {
+      status = 'Shutting Down Steam'
       await window.steamAPI.shutdownSteam()
       cookies = await window.steamAPI.getSteamCookies()
       steamRunning = false
+      status = 'Starting Steam'
       await window.steamAPI.startSteam()
     } catch (e) {
       cookiesError = e instanceof Error ? e.message : String(e)
@@ -100,39 +107,14 @@
 
 <div class="app">
   <Titlebar />
-  {#if !gamesLoading}
+  {#if gamesLoading || cookiesLoading || steamRunning}
+    <LargeLoadingScreen {status} {steamRunning} {restarting} onrestart={restartSteam} />
+  {:else}
     <main>
       <Sidebar {games} bind:selectedGame />
       <div class="content"></div>
     </main>
-  {:else}
-    <div class="main-loading-screen">
-      <span>Fetching Steam Metadata</span>
-    </div>
   {/if}
-  <div class="content">
-    {#if steamRunning}
-      {#if restarting}
-        <p style="color: var(--surface)">Closing Steam, please wait...</p>
-      {:else}
-        <p style="color: var(--surface)">
-          ⚠ Could not read cookies while Steam is running. Close Steam manually or let us restart
-          it.
-        </p>
-        <button onclick={() => restartSteam()}>Restart Steam for me</button>
-      {/if}
-    {:else if cookiesLoading}
-      <p style="color: var(--surface)">Reading Steam cookies...</p>
-    {:else if cookiesError}
-      <p style="color: red">Cookie error: {cookiesError}</p>
-    {:else if cookies}
-      <p style="color: green">✓ Cookies loaded</p>
-      <p style="color: var(--surface)">Session ID: {cookies.sessionId.slice(0, 8)}...</p>
-      <p style="color: var(--surface)">Login token: {cookies.loginSecure.slice(0, 8)}...</p>
-    {:else}
-      <p style="color: var(--surface)">No cookies</p>
-    {/if}
-  </div>
 </div>
 
 <style>
@@ -172,20 +154,6 @@
     overflow: hidden;
     padding: var(--spacing-m);
     gap: var(--spacing-m);
-  }
-
-  .main-loading-screen {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    justify-content: center;
-    font-family:
-      Open Sans,
-      sans-serif;
-    color: var(--surface);
-    font-size: var(--font-size-subheader);
-    font-weight: var(--font-weight-semibold);
   }
 
   .content {
