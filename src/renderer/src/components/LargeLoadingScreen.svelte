@@ -17,7 +17,7 @@
       <span>Closing Steam, please wait...</span>
     {:else}
       <span>Could not read cookies while Steam is running.</span>
-      <button onclick={onrestart}>Restart Steam for me</button>
+      <button class="pill-button">Restart Steam</button>
     {/if}
   {:else if status}
     <span>{status}</span>

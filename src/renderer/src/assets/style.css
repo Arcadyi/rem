@@ -174,3 +174,22 @@ button:active {
   font-family: "Open Sans";
   src: url("fonts/Open_Sans/OpenSans-VariableFont_wdth,wght.ttf") format("truetype");
 }
+
+.pill-button {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--surface);
+  font-family: "Open Sans", sans-serif;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-xs) var(--spacing-xs);
+  color: var(--surface);
+  transition: background var(--animation-slow);
+}
+
+.pill-button:hover {
+  background: var(--surface-muted) ;
+}
+
+.pill-button:active {
+  background: var(--surface) ;
+}
