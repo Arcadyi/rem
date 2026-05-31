@@ -166,15 +166,13 @@
 </script>
 
 <div class="app">
-  {#if gameBg}
-    {#key gameBg}
-      <div
-        class="bg-image"
-        style="background-image: url('{gameBg}')"
-        transition:fade={{ duration: 600 }}
-      ></div>
-    {/key}
-  {/if}
+  {#key gameBg}
+    <div
+      class="bg-image"
+      style="background-image: url('{gameBg}')"
+      transition:fade={{ duration: 600 }}
+    ></div>
+  {/key}
   <Titlebar />
   {#if gamesLoading || cookiesLoading || steamRunning}
     <LargeLoadingScreen {status} {steamRunning} {restarting} onrestart={restartSteam} />
@@ -245,12 +243,13 @@
     inset: 0;
     z-index: -1;
     pointer-events: none;
+    background-image: inherit;
     background-repeat: no-repeat;
-    background-position: top center;
-    background-size: 100% auto;
+    background-position: center;
+    background-size: cover;
     opacity: 0.3;
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 80%);
-    mask-image: linear-gradient(to bottom, black 0%, transparent 80%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 50%);
+    mask-image: linear-gradient(to bottom, black 0%, transparent 50%);
   }
 
   main {
