@@ -115,11 +115,14 @@
       {#if restarting}
         <p style="color: var(--surface)">Closing Steam, please wait...</p>
       {:else}
-        <p style="color: var(--surface)">⚠ Please close Steam to continue. Waiting...</p>
+        <p style="color: var(--surface)">
+          ⚠ Could not read cookies while Steam is running. Close Steam manually or let us restart
+          it.
+        </p>
         <button onclick={() => restartSteam()}>Restart Steam for me</button>
       {/if}
     {:else if cookiesLoading}
-      <p style="color: var(--surface)">Loading cookies...</p>
+      <p style="color: var(--surface)">Reading Steam cookies...</p>
     {:else if cookiesError}
       <p style="color: red">Cookie error: {cookiesError}</p>
     {:else if cookies}

@@ -339,12 +339,23 @@ function readCookies(dbPath: string): SteamCookies {
 
 
 /**
- * Reads Steam session cookies directly. Only works reliably when Steam is
- * closed. Throws if Steam is running — use `getSteamCookiesWithRestart` instead.
+ * Reads Steam session cookies.
  */
 export function getSteamCookies(): SteamCookies {
+  const dbPath = getCookieDbPath()
+
+  // Try reading directly first — works if Steam's browser hasn't locked the DB
+  try {
+    return readCookies(dbPath)
+  } catch {
+    // DB is locked or unreadable with Steam running
+  }
+
+  // Only prompt restart if direct read failed
   if (isSteamRunning()) {
     throw new Error('STEAM_RUNNING')
   }
-  return readCookies(getCookieDbPath())
+
+  // Steam isn't running but we still couldn't read — rethrow the real error
+  throw new Error('Failed to read Steam cookies — try restarting Steam')
 }
