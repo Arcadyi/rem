@@ -25,6 +25,7 @@
   let cookiesRetryInterval: ReturnType<typeof setInterval> | null = null
   let restarting = $state(false)
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let cookies = $state<SteamCookies | null>(null)
   let cookiesLoading = $state(false)
 
