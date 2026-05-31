@@ -39,3 +39,11 @@ export interface SteamCookies {
   sessionId: string
   loginSecure: string
 }
+
+export interface GameImages {
+  icon: string | null
+  header: string | null
+  capsule: string | null
+  hero: string | null
+  logo: string | null
+}

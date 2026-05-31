@@ -23,7 +23,10 @@ if (process.contextIsolated) {
       shutdownSteam: () => ipcRenderer.invoke('shutdownSteam'),
       startSteam: () => ipcRenderer.invoke('startSteam'),
       getSteamCookies: () => ipcRenderer.invoke('getSteamCookies'),
-      clearCookieCache: () => ipcRenderer.invoke('clearCookieCache')
+      debugSteamPaths: () => ipcRenderer.invoke('debugSteamPaths'),
+      debugGameImageFiles: () => ipcRenderer.invoke('debugGameImageFiles'),
+      clearCookieCache: () => ipcRenderer.invoke('clearCookieCache'),
+      getGameImages: (appId: number) => ipcRenderer.invoke('getGameImages', appId)
     })
   } catch (error) {
     console.error(error)

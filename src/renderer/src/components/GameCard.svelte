@@ -20,14 +20,9 @@
   let gameHeader = $state<string | null>(null)
 
   onMount(async () => {
-    try {
-      //const icon = await window.api.games.getLocalIcon(game.id)
-      //const details = await window.api.games.getDetails(game.id)
-      //gameHeader = details?.header_image ?? null
-      //iconSrc = icon ?? null
-    } catch {
-      iconSrc = null
-    }
+    const images = await window.steamAPI.getGameImages(game.appId)
+    iconSrc = images.icon
+    gameHeader = images.header
   })
 </script>
 
@@ -72,8 +67,11 @@
     flex-shrink: 0;
     padding: var(--spacing-xxs) var(--spacing-xs);
     cursor: pointer;
-    transition: background var(--animation-fast);
+    transition:
+      background var(--animation-fast),
+      opacity var(--animation-slow);
     color: var(--surface);
+    opacity: 65%;
   }
 
   .card.expanded {
@@ -86,6 +84,7 @@
   .card.selected {
     background: var(--border-light);
     border-left: 3px solid var(--primary);
+    opacity: 100%;
   }
   .card-icon {
     display: flex;

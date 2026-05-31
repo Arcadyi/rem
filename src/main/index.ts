@@ -1,12 +1,15 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, protocol, net } from 'electron'
 import { join } from 'path'
 import { Worker } from 'worker_threads'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { getInstalledGames, getModsForGame } from './steam'
+import { getGameImages, getInstalledGames, getModsForGame, getSteamPath } from './steam'
 import { Game } from '../shared/types'
 import { clearCookieCache, getSteamCookies, isSteamRunning, startSteam } from './cookies'
 import * as os from 'node:os'
+import path from 'node:path'
+import * as fs from 'node:fs'
+import { pathToFileURL } from 'node:url'
 
 function shutdownSteamAsync(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -70,6 +73,10 @@ function createWindow(): void {
   }
 }
 
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'steamasset', privileges: { secure: true, supportFetchAPI: true } }
+])
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -99,6 +106,35 @@ app.whenReady().then(() => {
   ipcMain.handle('shutdownSteam', () => shutdownSteamAsync())
   ipcMain.handle('startSteam', () => startSteam())
   ipcMain.handle('clearCookieCache', () => clearCookieCache())
+  protocol.handle('steamasset', (request) => {
+    // URL is: steamasset://localhost/<url-encoded-absolute-path>
+    const encoded = request.url.slice('steamasset://localhost/'.length)
+    const filePath = decodeURIComponent(encoded)
+    return net.fetch(pathToFileURL(filePath).toString())
+  })
+  ipcMain.handle('debugSteamPaths', () => {
+    const steamPath = getSteamPath()
+    const cachePath = path.join(steamPath ?? '', 'appcache', 'librarycache')
+    const exists = fs.existsSync(cachePath)
+    const files = exists ? fs.readdirSync(cachePath).slice(0, 20) : []
+    const appSample = files[0]
+    const sampleFiles = appSample ? fs.readdirSync(path.join(cachePath, appSample)) : []
+    return { steamPath, cachePath, exists, files, sampleFiles }
+  })
+
+  ipcMain.handle('debugGameImageFiles', (_event, appId: number) => {
+    const steamPath = getSteamPath()
+    const dir = path.join(steamPath ?? '', 'appcache', 'librarycache', String(appId))
+    if (!fs.existsSync(dir)) return { dir, files: [] }
+    const files = fs.readdirSync(dir).map((f) => {
+      const full = path.join(dir, f)
+      const stat = fs.statSync(full)
+      const children = stat.isDirectory() ? fs.readdirSync(full) : []
+      return { name: f, size: stat.size, isDir: stat.isDirectory(), children }
+    })
+    return { dir, files }
+  })
+  ipcMain.handle('getGameImages', (_event, appId: number) => getGameImages(appId))
   createWindow()
 
   app.on('activate', function () {

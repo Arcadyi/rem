@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
 import { execSync } from 'child_process'
-import type { Game, Mod, ModStatus } from '../shared/types'
+import type { Game, GameImages, Mod, ModStatus } from '../shared/types'
 
 const IGNORED_APP_IDS = new Set([
   228980, // Steamworks Common Redistributables
@@ -124,7 +124,7 @@ function vdfNode(node: VdfNode, key: string): VdfNode | null {
 }
 
 // Steam path discovery
-function getSteamPath(): string | null {
+export function getSteamPath(): string | null {
   if (process.platform === 'win32') {
     // Prefer the registry — most reliable even when Steam is on a non-default drive
     for (const hive of [
@@ -438,4 +438,51 @@ export async function getModsForGame(game: Game): Promise<Mod[]> {
 
   mods.sort((a, b) => a.name.localeCompare(b.name))
   return mods
+}
+
+export function getGameImages(appId: number): GameImages {
+  const steamPath = getSteamPath()
+  if (!steamPath) return { icon: null, header: null, capsule: null, hero: null, logo: null }
+
+  const base = path.join(steamPath, 'appcache', 'librarycache', String(appId))
+  if (!fs.existsSync(base))
+    return { icon: null, header: null, capsule: null, hero: null, logo: null }
+
+  const toUrl = (filePath: string | null): string | null => {
+    if (!filePath) return null
+    return `steamasset://localhost/${encodeURIComponent(filePath)}`
+  }
+
+  // Build a flat map of filename -> absolute path, searching root and one level of subdirs
+  const fileMap = new Map<string, string>()
+  for (const entry of fs.readdirSync(base, { withFileTypes: true })) {
+    const full = path.join(base, entry.name)
+    if (entry.isDirectory()) {
+      for (const child of fs.readdirSync(full)) {
+        fileMap.set(child, path.join(full, child))
+      }
+    } else {
+      fileMap.set(entry.name, full)
+    }
+  }
+
+  const find = (...names: string[]): string | null => {
+    for (const name of names) {
+      const p = fileMap.get(name)
+      if (p) return p
+    }
+    return null
+  }
+
+  const hashedJpgs = [...fileMap.entries()]
+    .filter(([name, p]) => /^[a-f0-9]{40}\.jpg$/.test(name) && !fs.statSync(p).isDirectory())
+    .sort((a, b) => fs.statSync(a[1]).size - fs.statSync(b[1]).size)
+
+  return {
+    icon: toUrl(hashedJpgs[0]?.[1] ?? null),
+    header: toUrl(find('library_header.jpg', 'header.jpg', 'capsule_616x353.jpg')),
+    capsule: toUrl(find('library_600x900.jpg', 'library_600x900_2x.jpg')),
+    hero: toUrl(find('library_hero.jpg', 'library_hero_blur.jpg')),
+    logo: toUrl(find('logo.png', 'logo_2x.png'))
+  }
 }
