@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Game, Mod } from '../../shared/types'
+  import type { Game, Mod, SteamCookies } from '../../shared/types'
   import Titlebar from './components/Titlebar.svelte'
   import Sidebar from './components/Sidebar.svelte'
   import { onMount } from 'svelte'
@@ -11,6 +11,15 @@
   let mods = $state<Mod[]>([])
   let modsLoading = $state(false)
   let modsError = $state<string | null>(null)
+
+
+  let steamRunning = $state(false)
+  let cookiesRetryInterval: ReturnType<typeof setInterval> | null = null
+  let restarting = $state(false)
+
+  let cookies = $state<SteamCookies | null>(null)
+  let cookiesLoading = $state(false)
+  let cookiesError = $state<string | null>(null)
 
   async function loadGames(): Promise<void> {
     gamesLoading = true
@@ -42,8 +51,50 @@
     }
   }
 
-  onMount(() => {
-    loadGames()
+  async function loadCookies(): Promise<void> {
+    cookiesLoading = true
+    cookiesError = null
+    try {
+      cookies = await window.steamAPI.getSteamCookies()
+      steamRunning = false
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      if (msg.includes('STEAM_RUNNING')) {
+        steamRunning = true
+        // Poll every 3 seconds until the user closes Steam
+        cookiesRetryInterval = setInterval(async () => {
+          const running = await window.steamAPI.isSteamRunning()
+          if (!running) {
+            clearInterval(cookiesRetryInterval!)
+            cookiesRetryInterval = null
+            await loadCookies()
+          }
+        }, 3000)
+      } else {
+        cookiesError = msg
+      }
+    } finally {
+      cookiesLoading = false
+    }
+  }
+
+  async function restartSteam(): Promise<void> {
+    restarting = true
+    try {
+      await window.steamAPI.shutdownSteam()
+      cookies = await window.steamAPI.getSteamCookies()
+      steamRunning = false
+      await window.steamAPI.startSteam()
+    } catch (e) {
+      cookiesError = e instanceof Error ? e.message : String(e)
+    } finally {
+      restarting = false
+    }
+  }
+
+  onMount(async () => {
+    await loadGames()
+    await loadCookies()
   })
 </script>
 
@@ -59,6 +110,26 @@
       <span>Fetching Steam Metadata</span>
     </div>
   {/if}
+  <div class="content">
+    {#if steamRunning}
+      {#if restarting}
+        <p style="color: var(--surface)">Closing Steam, please wait...</p>
+      {:else}
+        <p style="color: var(--surface)">⚠ Please close Steam to continue. Waiting...</p>
+        <button onclick={() => restartSteam()}>Restart Steam for me</button>
+      {/if}
+    {:else if cookiesLoading}
+      <p style="color: var(--surface)">Loading cookies...</p>
+    {:else if cookiesError}
+      <p style="color: red">Cookie error: {cookiesError}</p>
+    {:else if cookies}
+      <p style="color: green">✓ Cookies loaded</p>
+      <p style="color: var(--surface)">Session ID: {cookies.sessionId.slice(0, 8)}...</p>
+      <p style="color: var(--surface)">Login token: {cookies.loginSecure.slice(0, 8)}...</p>
+    {:else}
+      <p style="color: var(--surface)">No cookies</p>
+    {/if}
+  </div>
 </div>
 
 <style>

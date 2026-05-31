@@ -18,7 +18,11 @@ if (process.contextIsolated) {
     })
     contextBridge.exposeInMainWorld('steamAPI', {
       getInstalledGames: () => ipcRenderer.invoke('getInstalledGames'),
-      getModsForGame: (game: Game) => ipcRenderer.invoke('getModsForGame', game)
+      getModsForGame: (game: Game) => ipcRenderer.invoke('getModsForGame', game),
+      isSteamRunning: () => ipcRenderer.invoke('isSteamRunning'),
+      shutdownSteam: () => ipcRenderer.invoke('shutdownSteam'),
+      startSteam: () => ipcRenderer.invoke('startSteam'),
+      getSteamCookies: () => ipcRenderer.invoke('getSteamCookies')
     })
   } catch (error) {
     console.error(error)

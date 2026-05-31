@@ -12,6 +12,10 @@ declare global {
     steamAPI: {
       getInstalledGames: () => Promise<Game[]>
       getModsForGame: (game: Game) => Promise<Mod[]>
+      isSteamRunning: () => Promise<boolean>
+      shutdownSteam: () => Promise<void>
+      startSteam: () => Promise<void>
+      getSteamCookies: () => Promise<SteamCookies>
     }
   }
 }

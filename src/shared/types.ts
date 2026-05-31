@@ -34,3 +34,8 @@ export interface Playlist {
   mods: Mod[]
   code: string
 }
+
+export interface SteamCookies {
+  sessionId: string
+  loginSecure: string
+}

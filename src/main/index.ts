@@ -1,9 +1,27 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
+import { Worker } from 'worker_threads'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { getInstalledGames, getModsForGame } from './steam'
 import { Game } from '../shared/types'
+import { getSteamCookies, isSteamRunning, startSteam } from './cookies'
+
+function shutdownSteamAsync(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(join(__dirname, 'steamShutdown.worker.js'))
+    worker.once('message', (msg) => {
+      worker.terminate()
+      if (msg.success) resolve()
+      else reject(new Error(msg.error))
+    })
+    worker.once('error', (err) => {
+      worker.terminate()
+      reject(err)
+    })
+    worker.postMessage('start')
+  })
+}
 
 function createWindow(): void {
   // Create the browser window.
@@ -70,6 +88,10 @@ app.whenReady().then(() => {
     return await getModsForGame(game)
   })
 
+  ipcMain.handle('isSteamRunning', () => isSteamRunning())
+  ipcMain.handle('getSteamCookies', () => getSteamCookies())
+  ipcMain.handle('shutdownSteam', () => shutdownSteamAsync())
+  ipcMain.handle('startSteam', () => startSteam())
   createWindow()
 
   app.on('activate', function () {
