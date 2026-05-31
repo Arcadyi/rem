@@ -2,6 +2,7 @@
   import type { Game, Mod } from '../../shared/types'
   import Titlebar from './components/Titlebar.svelte'
   import Sidebar from './components/Sidebar.svelte'
+  import { onMount } from 'svelte'
 
   let gamesLoading = $state<boolean>(true)
   let error = $state<string | null>(null)
@@ -38,7 +39,9 @@
     }
   }
 
-  loadGames()
+  onMount(() => {
+    loadGames()
+  })
 </script>
 
 <div class="app">
@@ -114,6 +117,6 @@
     flex-direction: column;
     overflow: hidden;
     gap: var(--spacing-xs);
-    min-width: 0;  /* prevents flex blowout */
+    min-width: 0; /* prevents flex blowout */
   }
 </style>
