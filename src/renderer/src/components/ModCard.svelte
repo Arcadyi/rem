@@ -154,6 +154,7 @@
     gap: var(--spacing-xs);
     padding: var(--spacing-xs) var(--spacing-xs);
     background: var(--bg-transparent);
+    backdrop-filter: var(--bg-blur);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-xs);
     cursor: pointer;
