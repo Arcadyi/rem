@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Mod } from '../../../shared/types'
   import Checkbox from './Checkbox.svelte'
+  import Tooltip from './Tooltip.svelte'
   import IconaCloudClockFill from '../assets/icons/IconamoonCloudClockFill.svelte'
   import IconaFolderFill from '../assets/icons/IconamoonFolderFill.svelte'
 
@@ -99,89 +100,84 @@
   </div>
 
   <div class="mod-actions">
-    <button
-      class="action-btn"
-      title="Open on Steam"
-      aria-label="Open on Steam"
-      onclick={handleOpenPage}
-    >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+    <Tooltip text="Open on Steam">
+      <button class="action-btn" aria-label="Open on Steam" onclick={handleOpenPage}>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+          <polyline points="15 3 21 3 21 9" />
+          <line x1="10" y1="14" x2="21" y2="3" />
+        </svg>
+      </button>
+    </Tooltip>
+
+    <Tooltip text="Open folder">
+      <button
+        class="action-btn"
+        aria-label="Open folder"
+        onclick={handleOpenFolder}
+        disabled={!mod.path}
       >
-        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-        <polyline points="15 3 21 3 21 9" />
-        <line x1="10" y1="14" x2="21" y2="3" />
-      </svg>
-    </button>
-    <button
-      class="action-btn"
-      title="Open folder"
-      aria-label="Open folder"
-      onclick={handleOpenFolder}
-      disabled={!mod.path}
-    >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-      </svg>
-    </button>
-    <button
-      class="action-btn"
-      title="Force redownload"
-      aria-label="Force redownload"
-      onclick={handleRedownload}
-    >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <polyline points="1 4 1 10 7 10" />
-        <path d="M3.51 15a9 9 0 1 0 .49-3.51" />
-      </svg>
-    </button>
-    <button
-      class="action-btn danger"
-      title="Unsubscribe"
-      aria-label="Unsubscribe"
-      onclick={handleUnsubscribe}
-    >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-        <path d="M10 11v6M14 11v6" />
-        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-      </svg>
-    </button>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+        </svg>
+      </button>
+    </Tooltip>
+
+    <Tooltip text="Force redownload">
+      <button class="action-btn" aria-label="Force redownload" onclick={handleRedownload}>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="1 4 1 10 7 10" />
+          <path d="M3.51 15a9 9 0 1 0 .49-3.51" />
+        </svg>
+      </button>
+    </Tooltip>
+
+    <Tooltip text="Unsubscribe">
+      <button class="action-btn danger" aria-label="Unsubscribe" onclick={handleUnsubscribe}>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          <path d="M10 11v6M14 11v6" />
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+        </svg>
+      </button>
+    </Tooltip>
   </div>
 </div>
 

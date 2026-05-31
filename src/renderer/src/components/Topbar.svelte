@@ -8,6 +8,7 @@
   import IconamoonSynchronize from '../assets/icons/IconamoonSynchronize.svelte'
   import LsiconDensityLFilled from '../assets/icons/LsiconDensityLFilled.svelte'
   import LsiconDensitySFilled from '../assets/icons/LsiconDensitySFilled.svelte'
+  import Tooltip from './Tooltip.svelte'
 
   type SortOrder = 'default' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'
 
@@ -56,12 +57,9 @@
 
 <div class="topbar">
   <div class="topbar-left">
-    <Checkbox
-      checked={allSelected}
-      indeterminate={someSelected}
-      disabled={!selectedGame || loading}
-      onchange={handleCheckbox}
-    />
+    <Tooltip text="Select All">
+      <Checkbox checked={allSelected} indeterminate={someSelected} onchange={handleCheckbox} />
+    </Tooltip>
     {#if selectedCount > 0}
       <span class="selection-count">{selectedCount} selected</span>
     {/if}
@@ -86,27 +84,20 @@
 
     <Dropdown options={SORT_OPTIONS} bind:value={sortOrder} disabled={!selectedGame || loading} />
 
-    <button
-      class="pill-button"
-      onclick={onToggleCompact}
-      title="Toggle Compact Mode"
-      aria-label="Toggle Compact Mode"
-    >
-      {#if compact}
-        <LsiconDensityLFilled width={12} height={12} />
-      {:else}
-        <LsiconDensitySFilled width={12} height={12} />
-      {/if}
-    </button>
-    <button
-      class="pill-button"
-      onclick={onRefresh}
-      disabled={!selectedGame || loading}
-      title="Refresh"
-      aria-label="Refresh"
-    >
-      <IconamoonSynchronize width={12} height={12} />
-    </button>
+    <Tooltip text="Toggle Compact Mode">
+      <button class="pill-button" onclick={onToggleCompact}>
+        {#if compact}
+          <LsiconDensityLFilled width={12} height={12} />
+        {:else}
+          <LsiconDensitySFilled width={12} height={12} />
+        {/if}
+      </button>
+    </Tooltip>
+    <Tooltip text="Refresh">
+      <button class="pill-button" onclick={onRefresh} disabled={!selectedGame || loading}>
+        <IconamoonSynchronize width={12} height={12} />
+      </button>
+    </Tooltip>
   </div>
 </div>
 

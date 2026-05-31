@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Tooltip from './Tooltip.svelte'
+
   let { selectedCount, onRedownload, onUnsubscribe } = $props<{
     selectedCount: number
     onRedownload: () => Promise<void>
@@ -35,20 +37,24 @@
     {/if}
   </span>
   <div class="actions">
-    <button
-      class="pill-button"
-      onclick={handleRedownload}
-      disabled={actionLoading || selectedCount === 0}
-    >
-      Redownload
-    </button>
-    <button
-      class="pill-button danger"
-      onclick={handleUnsubscribe}
-      disabled={actionLoading || selectedCount === 0}
-    >
-      Unsubscribe
-    </button>
+    <Tooltip text="Force redownload of the selected items">
+      <button
+        class="pill-button"
+        onclick={handleRedownload}
+        disabled={actionLoading || selectedCount === 0}
+      >
+        Redownload
+      </button>
+    </Tooltip>
+    <Tooltip text="Unsubscribe from the selected items">
+      <button
+        class="pill-button danger"
+        onclick={handleUnsubscribe}
+        disabled={actionLoading || selectedCount === 0}
+      >
+        Unsubscribe
+      </button>
+    </Tooltip>
   </div>
 </div>
 
