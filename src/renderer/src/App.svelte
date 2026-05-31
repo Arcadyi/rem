@@ -2,7 +2,7 @@
   import type { Game, Mod, SteamCookies } from '../../shared/types'
   import Titlebar from './components/Titlebar.svelte'
   import Sidebar from './components/Sidebar.svelte'
-  import { onMount } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
   import LargeLoadingScreen from './components/LargeLoadingScreen.svelte'
   import ModList from './components/ModList.svelte'
   import { SvelteMap } from 'svelte/reactivity'
@@ -17,11 +17,9 @@
   let selectedGame = $state<Game | null>(null)
   let mods = $state<Mod[]>([])
   let modsLoading = $state(false)
-  let modsError = $state<string | null>(null)
   let modListAllSelected = $state(false)
   let modListSomeSelected = $state(false)
   let modsCache = new SvelteMap<number, Mod[]>()
-  let cacheReady = $state(false)
 
   let steamRunning = $state(false)
   let cookiesRetryInterval: ReturnType<typeof setInterval> | null = null
@@ -29,7 +27,6 @@
 
   let cookies = $state<SteamCookies | null>(null)
   let cookiesLoading = $state(false)
-  let cookiesError = $state<string | null>(null)
 
   let searchQuery = $state('')
   let modListSelectedCount = $state(0)
@@ -100,12 +97,11 @@
         )
       }
       modsCache = enrichedCache
-      cacheReady = true
 
       // Refresh currently visible mods if a game is selected
       if (selectedGame) mods = modsCache.get(selectedGame.appId) ?? []
     } catch (e) {
-      modsError = e instanceof Error ? e.message : String(e)
+      status = e instanceof Error ? e.message : String(e)
     } finally {
       modsLoading = false
     }
@@ -113,7 +109,6 @@
 
   async function loadCookies(): Promise<void> {
     cookiesLoading = true
-    cookiesError = null
     try {
       status = 'Loading Cookies'
       cookies = await window.steamAPI.getSteamCookies()
@@ -122,6 +117,7 @@
       const msg = e instanceof Error ? e.message : String(e)
       if (msg.includes('STEAM_RUNNING')) {
         steamRunning = true
+        status = null
         // Poll every 3 seconds until the user closes Steam
         cookiesRetryInterval = setInterval(async () => {
           const running = await window.steamAPI.isSteamRunning()
@@ -132,7 +128,6 @@
           }
         }, 3000)
       } else {
-        cookiesError = msg
         status = msg
       }
     } finally {
@@ -150,7 +145,7 @@
       status = 'Starting Steam'
       await window.steamAPI.startSteam()
     } catch (e) {
-      cookiesError = e instanceof Error ? e.message : String(e)
+      status = e instanceof Error ? e.message : String(e)
     } finally {
       restarting = false
     }
@@ -160,6 +155,13 @@
     await loadCookies()
     await loadGames()
     await preloadAllMods(games)
+  })
+
+  onDestroy(() => {
+    if (cookiesRetryInterval) {
+      clearInterval(cookiesRetryInterval)
+      cookiesRetryInterval = null
+    }
   })
 </script>
 
