@@ -6,10 +6,8 @@
 
   let gamesLoading = $state<boolean>(true)
   let error = $state<string | null>(null)
-  let { games = $bindable<Game[]>([]), selectedGame = $bindable<Game | null>(null) } = $props<{
-    games?: Game[]
-    selectedGame?: Game | null
-  }>()
+  let games = $state<Game[]>([])
+  let selectedGame = $state<Game | null>(null)
   let mods = $state<Mod[]>([])
   let modsLoading = $state(false)
   let modsError = $state<string | null>(null)
@@ -25,8 +23,13 @@
     }
   }
 
+  $effect(() => {
+    if (selectedGame) {
+      loadMods(selectedGame)
+    }
+  })
+
   async function loadMods(game: Game): Promise<void> {
-    selectedGame = game
     mods = []
     modsError = null
     modsLoading = true
@@ -48,7 +51,7 @@
   <Titlebar />
   {#if !gamesLoading}
     <main>
-      <Sidebar bind:games bind:selectedGame />
+      <Sidebar {games} bind:selectedGame />
       <div class="content"></div>
     </main>
   {:else}

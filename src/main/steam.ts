@@ -228,8 +228,7 @@ function parseAppManifest(filePath: string): AppManifest | null {
 // Public API
 /**
  * Returns all installed Steam games found across every Steam library on the
- * current machine (Windows and Linux).  Mod-related fields are initialised to
- * their zero values — populate them separately once you have the game list.
+ * current machine (Windows and Linux).
  */
 export async function getInstalledGames(): Promise<Game[]> {
   const steamPath = getSteamPath()
