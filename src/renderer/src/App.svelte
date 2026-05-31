@@ -11,6 +11,7 @@
   import BottomBar from './components/BottomBar.svelte'
 
   let gamesLoading = $state<boolean>(true)
+  let compact = $state<boolean>(false)
   let status = $state<string | null>(null)
   let games = $state<Game[]>([])
   let gameBg = $state<string | null>(null)
@@ -33,6 +34,9 @@
   let sortOrder = $state<'default' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'>('default')
   let modListSelectedCount = $state(0)
   let modListRefresh = $state<() => void>(() => refreshMods())
+  let toggleCompact = $state<() => void>(() => {
+    compact = !compact
+  })
   let modListSelectAll = $state<() => void>(() => {})
   let modListDeselectAll = $state<() => void>(() => {})
   let modListRedownload = $state<() => Promise<void>>(async () => {})
@@ -206,6 +210,7 @@
         <Topbar
           allSelected={modListAllSelected}
           someSelected={modListSomeSelected}
+          {compact}
           {selectedGame}
           selectedCount={modListSelectedCount}
           totalCount={mods.length}
@@ -215,10 +220,12 @@
           onSelectAll={modListSelectAll}
           onDeselectAll={modListDeselectAll}
           onRefresh={modListRefresh}
+          onToggleCompact={toggleCompact}
         />
         <ModList
           bind:allSelected={modListAllSelected}
           bind:someSelected={modListSomeSelected}
+          {compact}
           {selectedGame}
           {mods}
           {searchQuery}

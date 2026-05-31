@@ -6,6 +6,8 @@
   import IconamoonClose from '../assets/icons/IconamoonClose.svelte'
   import IconamoonSearch from '../assets/icons/IconamoonSearch.svelte'
   import IconamoonSynchronize from '../assets/icons/IconamoonSynchronize.svelte'
+  import LsiconDensityLFilled from '../assets/icons/LsiconDensityLFilled.svelte'
+  import LsiconDensitySFilled from '../assets/icons/LsiconDensitySFilled.svelte'
 
   type SortOrder = 'default' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'
 
@@ -20,6 +22,7 @@
   let {
     allSelected = false,
     someSelected = false,
+    compact = false,
     selectedGame,
     selectedCount,
     loading,
@@ -27,10 +30,12 @@
     sortOrder = $bindable<SortOrder>('default'),
     onSelectAll,
     onDeselectAll,
-    onRefresh
+    onRefresh,
+    onToggleCompact
   } = $props<{
     allSelected?: boolean
     someSelected?: boolean
+    compact: boolean
     selectedGame: Game | null
     selectedCount: number
     totalCount: number
@@ -40,6 +45,7 @@
     onSelectAll: () => void
     onDeselectAll: () => void
     onRefresh: () => void
+    onToggleCompact: () => void
   }>()
 
   function handleCheckbox(checked: boolean): void {
@@ -67,7 +73,7 @@
       <input
         class="search"
         type="text"
-        placeholder="Search mods..."
+        placeholder="Search..."
         bind:value={searchQuery}
         disabled={!selectedGame || loading}
       />
@@ -80,7 +86,25 @@
 
     <Dropdown options={SORT_OPTIONS} bind:value={sortOrder} disabled={!selectedGame || loading} />
 
-    <button class="pill-button" onclick={onRefresh} disabled={!selectedGame || loading}>
+    <button
+      class="pill-button"
+      onclick={onToggleCompact}
+      title="Toggle Compact Mode"
+      aria-label="Toggle Compact Mode"
+    >
+      {#if compact}
+        <LsiconDensityLFilled width={12} height={12} />
+      {:else}
+        <LsiconDensitySFilled width={12} height={12} />
+      {/if}
+    </button>
+    <button
+      class="pill-button"
+      onclick={onRefresh}
+      disabled={!selectedGame || loading}
+      title="Refresh"
+      aria-label="Refresh"
+    >
       <IconamoonSynchronize width={12} height={12} />
     </button>
   </div>
