@@ -6,6 +6,7 @@ import icon from '../../resources/icon.png?asset'
 import { getInstalledGames, getModsForGame } from './steam'
 import { Game } from '../shared/types'
 import { clearCookieCache, getSteamCookies, isSteamRunning, startSteam } from './cookies'
+import * as os from 'node:os'
 
 function shutdownSteamAsync(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -23,6 +24,9 @@ function shutdownSteamAsync(): Promise<void> {
   })
 }
 
+const isWin11 =
+  process.platform === 'win32' && parseInt(os.release().split('.')[2] ?? '0', 10) >= 22000
+
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -34,7 +38,7 @@ function createWindow(): void {
     autoHideMenuBar: true,
     frame: false,
     transparent: true,
-    ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' } : {}),
+    ...(isWin11 ? { backgroundMaterial: 'acrylic' } : {}),
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

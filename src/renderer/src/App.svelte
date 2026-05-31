@@ -132,6 +132,10 @@
     -webkit-backdrop-filter: var(--bg-blur);
     position: relative;
     z-index: 1;
+
+    @supports not (backdrop-filter: blur(1px)) {
+      background: rgba(20, 20, 20, 0.92);
+    }
   }
 
   .bg-image {
