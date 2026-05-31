@@ -18,7 +18,7 @@
     {#each games as game (game.appId)}
       <GameCard
         {game}
-        selected={selectedGame?.id === game.appId}
+        selected={selectedGame?.appId === game.appId}
         onclick={() => (selectedGame = game)}
         {expanded}
       />
@@ -37,7 +37,7 @@
     overflow: hidden;
   }
   .sidebar.expanded {
-    width: 260px;
+    width: 268px;
   }
   .sidebar-toggle-button {
     display: flex;

@@ -1,29 +1,29 @@
 <script>
-import IconamoonSignMinusFill from '../assets/icons/IconamoonSignMinusFill.svelte'
-import IconamoonScreenFull from '../assets/icons/IconamoonScreenFull.svelte'
-import IconamoonClose from '../assets/icons/IconamoonClose.svelte'
+  import IconamoonSignMinusFill from '../assets/icons/IconamoonSignMinusFill.svelte'
+  import IconamoonScreenFull from '../assets/icons/IconamoonScreenFull.svelte'
+  import IconamoonClose from '../assets/icons/IconamoonClose.svelte'
 </script>
 
 <div class="titlebar">
   <div class="topbar-left">
-    <h1 class="topbar-name">APSYN</h1>
+    <h1 class="topbar-name">APSYS</h1>
   </div>
 
-  <div class="topbar-center">
-  </div>
+  <div class="topbar-center"></div>
 
   <div class="topbar-right">
     <button class="topbar-button" onclick={() => window.api.minimize()}>
-      <IconamoonSignMinusFill/>
+      <IconamoonSignMinusFill />
     </button>
     <button class="topbar-button" onclick={() => window.api.maximize()}>
-      <IconamoonScreenFull/>
+      <IconamoonScreenFull />
     </button>
     <button class="topbar-button close" onclick={() => window.api.close()}>
-      <IconamoonClose/>
+      <IconamoonClose />
     </button>
   </div>
 </div>
+
 <style>
   .titlebar {
     display: flex;
@@ -57,13 +57,14 @@ import IconamoonClose from '../assets/icons/IconamoonClose.svelte'
   .topbar-name {
     font-size: var(--font-size-subheader);
     font-weight: var(--font-weight-heavy);
-    font-family: DM Sans, sans-serif;
   }
 
   .topbar-version {
     font-size: var(--font-size-tiny);
     font-weight: var(--font-weight-extralight);
-    font-family: DM Sans, sans-serif;
+    font-family:
+      DM Sans,
+      sans-serif;
     padding: var(--spacing-xxs);
   }
 
@@ -93,7 +94,6 @@ import IconamoonClose from '../assets/icons/IconamoonClose.svelte'
     border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
   }
 
-
   .topbar-button:hover {
     background: var(--border-light);
   }
@@ -109,5 +109,4 @@ import IconamoonClose from '../assets/icons/IconamoonClose.svelte'
   .topbar-button:focus:not(:focus-visible) {
     outline: none;
   }
-
 </style>

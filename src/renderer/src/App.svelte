@@ -3,13 +3,15 @@
   import Titlebar from './components/Titlebar.svelte'
   import Sidebar from './components/Sidebar.svelte'
 
-  let games: Game[] = []
-  let gamesLoading = false
-  let error: string | null = null
-  let selectedGame: Game | null = null
-  let mods: Mod[] = []
-  let modsLoading = false
-  let modsError: string | null = null
+  let gamesLoading = $state<boolean>(true)
+  let error = $state<string | null>(null)
+  let { games = $bindable<Game[]>([]), selectedGame = $bindable<Game | null>(null) } = $props<{
+    games?: Game[]
+    selectedGame?: Game | null
+  }>()
+  let mods = $state<Mod[]>([])
+  let modsLoading = $state(false)
+  let modsError = $state<string | null>(null)
 
   async function loadGames(): Promise<void> {
     gamesLoading = true
@@ -43,9 +45,8 @@
   <Titlebar />
   {#if !gamesLoading}
     <main>
-      <Sidebar bind:games bind:selectedGame/>
-      <div class="content">
-      </div>
+      <Sidebar bind:games bind:selectedGame />
+      <div class="content"></div>
     </main>
   {:else}
     <div class="main-loading-screen">
@@ -99,7 +100,9 @@
     align-items: center;
     flex-direction: column;
     justify-content: center;
-    font-family: DM Sans, sans-serif;
+    font-family:
+      Open Sans,
+      sans-serif;
     color: var(--surface);
     font-size: var(--font-size-subheader);
     font-weight: var(--font-weight-semibold);
