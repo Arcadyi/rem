@@ -126,7 +126,6 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
-    border-radius: var(--radius-xs);
     background: var(--bg-transparent);
     backdrop-filter: var(--bg-blur);
     -webkit-backdrop-filter: var(--bg-blur);
