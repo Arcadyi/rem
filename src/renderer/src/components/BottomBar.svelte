@@ -55,11 +55,14 @@
 <style>
   .bottombar {
     display: flex;
+    height: 48px;
     align-items: center;
     justify-content: space-between;
-    padding: var(--spacing-xxs) 0;
     flex-shrink: 0;
-    border-top: 1px solid var(--border-light);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xs);
+    background: var(--bg-transparent);
+    padding: var(--spacing-xs);
   }
 
   .label {

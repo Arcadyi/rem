@@ -202,39 +202,37 @@
     <main>
       <Sidebar {games} bind:selectedGame />
       <div class="content">
-        {#if selectedGame}
-          <Topbar
-            allSelected={modListAllSelected}
-            someSelected={modListSomeSelected}
-            {selectedGame}
-            selectedCount={modListSelectedCount}
-            totalCount={mods.length}
-            loading={modsLoading}
-            bind:searchQuery
-            onSelectAll={modListSelectAll}
-            onDeselectAll={modListDeselectAll}
-            onRefresh={modListRefresh}
-          />
-          <ModList
-            bind:allSelected={modListAllSelected}
-            bind:someSelected={modListSomeSelected}
-            {selectedGame}
-            {mods}
-            {searchQuery}
-            loading={modsLoading}
-            bind:selectedCount={modListSelectedCount}
-            bind:refresh={modListRefresh}
-            bind:selectAll={modListSelectAll}
-            bind:deselectAll={modListDeselectAll}
-            bind:redownloadSelected={modListRedownload}
-            bind:unsubscribeSelected={modListUnsubscribe}
-          />
-          <BottomBar
-            selectedCount={modListSelectedCount}
-            onRedownload={modListRedownload}
-            onUnsubscribe={modListUnsubscribe}
-          />
-        {/if}
+        <Topbar
+          allSelected={modListAllSelected}
+          someSelected={modListSomeSelected}
+          {selectedGame}
+          selectedCount={modListSelectedCount}
+          totalCount={mods.length}
+          loading={modsLoading}
+          bind:searchQuery
+          onSelectAll={modListSelectAll}
+          onDeselectAll={modListDeselectAll}
+          onRefresh={modListRefresh}
+        />
+        <ModList
+          bind:allSelected={modListAllSelected}
+          bind:someSelected={modListSomeSelected}
+          {selectedGame}
+          {mods}
+          {searchQuery}
+          loading={modsLoading}
+          bind:selectedCount={modListSelectedCount}
+          bind:refresh={modListRefresh}
+          bind:selectAll={modListSelectAll}
+          bind:deselectAll={modListDeselectAll}
+          bind:redownloadSelected={modListRedownload}
+          bind:unsubscribeSelected={modListUnsubscribe}
+        />
+        <BottomBar
+          selectedCount={modListSelectedCount}
+          onRedownload={modListRedownload}
+          onUnsubscribe={modListUnsubscribe}
+        />
       </div>
     </main>
   {/if}
@@ -289,6 +287,6 @@
     flex-direction: column;
     overflow: hidden;
     gap: var(--spacing-xs);
-    min-width: 0; /* prevents flex blowout */
+    min-width: 0;
   }
 </style>

@@ -28,7 +28,6 @@
     onRefresh: () => void
   }>()
 
-
   function handleCheckbox(checked: boolean): void {
     if (checked) onSelectAll()
     else onDeselectAll()
@@ -65,7 +64,7 @@
       {/if}
     </div>
     <button class="pill-button" onclick={onRefresh} disabled={!selectedGame || loading}>
-      <IconamoonSynchronize width={12} height={12}/>
+      <IconamoonSynchronize width={12} height={12} />
     </button>
   </div>
 </div>
@@ -74,9 +73,13 @@
   .topbar {
     display: flex;
     align-items: center;
+    height: 48px;
     justify-content: space-between;
     gap: var(--spacing-xs);
-    padding: var(--spacing-xxs) 0;
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-xs);
+    background: var(--bg-transparent);
+    border: 1px solid var(--border-light);
     flex-shrink: 0;
   }
 
