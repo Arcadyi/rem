@@ -4,10 +4,13 @@
   import Loader from './Loader.svelte'
   import { SvelteSet } from 'svelte/reactivity'
 
+  type SortOrder = 'default' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'
+
   let {
     selectedGame,
     mods,
     searchQuery = '',
+    sortOrder = 'default',
     selectedCount = $bindable(0),
     allSelected = $bindable(false),
     someSelected = $bindable(false),
@@ -22,6 +25,7 @@
     selectedGame: Game | null
     mods: Mod[]
     searchQuery?: string
+    sortOrder?: SortOrder
     selectedCount?: number
     allSelected?: boolean
     someSelected?: boolean
@@ -46,13 +50,29 @@
     if (selectedGame) selectedIds.clear()
   })
 
-  const filteredMods = $derived(
-    searchQuery.trim()
-      ? mods.filter((m: { name: string }) =>
-          m.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
-        )
-      : mods
-  )
+  const filteredMods = $derived.by(() => {
+    // Always produce a plain array copy so sort never mutates the reactive source
+    const base: Mod[] = searchQuery.trim()
+      ? mods.filter((m) => m.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+      : [...mods]
+
+    if (sortOrder === 'default') return base
+
+    return base.sort((a, b) => {
+      switch (sortOrder) {
+        case 'name-asc':
+          return a.name.localeCompare(b.name)
+        case 'name-desc':
+          return b.name.localeCompare(a.name)
+        case 'size-desc':
+          return b.sizeBytes - a.sizeBytes
+        case 'size-asc':
+          return a.sizeBytes - b.sizeBytes
+        default:
+          return 0
+      }
+    })
+  })
 
   function toggleMod(id: number): void {
     if (selectedIds.has(id)) selectedIds.delete(id)

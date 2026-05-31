@@ -30,6 +30,7 @@
   let cookiesLoading = $state(false)
 
   let searchQuery = $state('')
+  let sortOrder = $state<'default' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'>('default')
   let modListSelectedCount = $state(0)
   let modListRefresh = $state<() => void>(() => refreshMods())
   let modListSelectAll = $state<() => void>(() => {})
@@ -210,6 +211,7 @@
           totalCount={mods.length}
           loading={modsLoading}
           bind:searchQuery
+          bind:sortOrder
           onSelectAll={modListSelectAll}
           onDeselectAll={modListDeselectAll}
           onRefresh={modListRefresh}
@@ -220,6 +222,7 @@
           {selectedGame}
           {mods}
           {searchQuery}
+          {sortOrder}
           loading={modsLoading}
           bind:selectedCount={modListSelectedCount}
           bind:refresh={modListRefresh}

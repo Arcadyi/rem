@@ -1,9 +1,21 @@
 <script lang="ts">
   import type { Game } from '../../../shared/types'
   import Checkbox from './Checkbox.svelte'
+  import Dropdown from './Dropdown.svelte'
+  import type { DropdownOption } from './Dropdown.svelte'
   import IconamoonClose from '../assets/icons/IconamoonClose.svelte'
   import IconamoonSearch from '../assets/icons/IconamoonSearch.svelte'
   import IconamoonSynchronize from '../assets/icons/IconamoonSynchronize.svelte'
+
+  type SortOrder = 'default' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'
+
+  const SORT_OPTIONS: DropdownOption<SortOrder>[] = [
+    { value: 'default', label: 'Default' },
+    { value: 'name-asc', label: 'Name A → Z' },
+    { value: 'name-desc', label: 'Name Z → A' },
+    { value: 'size-desc', label: 'Size (largest)' },
+    { value: 'size-asc', label: 'Size (smallest)' }
+  ]
 
   let {
     allSelected = false,
@@ -12,6 +24,7 @@
     selectedCount,
     loading,
     searchQuery = $bindable(''),
+    sortOrder = $bindable<SortOrder>('default'),
     onSelectAll,
     onDeselectAll,
     onRefresh
@@ -23,6 +36,7 @@
     totalCount: number
     loading: boolean
     searchQuery: string
+    sortOrder?: SortOrder
     onSelectAll: () => void
     onDeselectAll: () => void
     onRefresh: () => void
@@ -63,6 +77,9 @@
         </button>
       {/if}
     </div>
+
+    <Dropdown options={SORT_OPTIONS} bind:value={sortOrder} disabled={!selectedGame || loading} />
+
     <button class="pill-button" onclick={onRefresh} disabled={!selectedGame || loading}>
       <IconamoonSynchronize width={12} height={12} />
     </button>
@@ -93,7 +110,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-xxs);
-    flex: 1; /* fill remaining space */
+    flex: 1;
     min-width: 0;
   }
 
