@@ -1,10 +1,12 @@
 <script lang="ts">
   import Tooltip from './Tooltip.svelte'
+  import IconamoonSignPlus from '../assets/icons/IconamoonSignPlus.svelte'
 
-  let { selectedCount, onRedownload, onUnsubscribe } = $props<{
+  let { selectedCount, onRedownload, onUnsubscribe, onAddToPlaylist } = $props<{
     selectedCount: number
     onRedownload: () => Promise<void>
     onUnsubscribe: () => Promise<void>
+    onAddToPlaylist: () => void
   }>()
 
   let actionLoading = $state(false)
@@ -37,6 +39,15 @@
     {/if}
   </span>
   <div class="actions">
+    <Tooltip text="Add selected items to a playlist">
+      <button
+        class="round-button"
+        onclick={onAddToPlaylist}
+        disabled={actionLoading || selectedCount === 0}
+      >
+        <IconamoonSignPlus width={24} height={24} />
+      </button>
+    </Tooltip>
     <Tooltip text="Force redownload of the selected items">
       <button
         class="pill-button"
@@ -84,10 +95,5 @@
   .pill-button.danger:hover {
     background: var(--quartenary);
     border-color: var(--quartenary);
-  }
-
-  .pill-button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
   }
 </style>

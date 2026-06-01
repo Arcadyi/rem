@@ -13,8 +13,8 @@
 
   let visible = $state(false)
   let wrapperEl = $state<HTMLDivElement | null>(null)
-  let x = $state(0)
-  let y = $state(0)
+  let x = $state<number | null>(null)
+  let y = $state<number | null>(null)
 
   function portal(node: HTMLElement): { destroy(): void } {
     document.body.appendChild(node)
@@ -36,6 +36,7 @@
   function hide(): void {
     visible = false
   }
+
 </script>
 
 <div
@@ -48,7 +49,7 @@
   {@render children()}
 </div>
 
-{#if visible && text}
+{#if visible && text && x !== null && y !== null}
   <div class="tooltip {position}" style="left:{x}px; top:{y}px" use:portal>
     {text}
     <span class="arrow {position}"></span>

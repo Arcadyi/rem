@@ -163,7 +163,39 @@ button:active {
   src: url("fonts/Open_Sans/OpenSans-VariableFont_wdth,wght.ttf") format("truetype");
 }
 
+.round-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
+  padding: var(--spacing-xxs);
+  color: var(--border-light);
+  background: transparent;
+  transition:
+    color var(--animation-slow),
+    background var(--animation-slow);
+}
+
+.round-button:hover {
+  background: var(--surface-muted) ;
+  color: var(--surface);
+}
+
+.round-button:active {
+  background: var(--surface);
+}
+
+
+.round-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .pill-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-light);
   font-family: "Open Sans", sans-serif;
@@ -183,4 +215,9 @@ button:active {
 
 .pill-button:active {
   background: var(--surface) ;
+}
+
+.pill-button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }

@@ -16,6 +16,7 @@
     someSelected = $bindable(false),
     loading = false,
     compact = $bindable(false),
+    selectedIds = $bindable(SvelteSet<number>),
     refresh = $bindable<() => void>(() => {}),
     selectAll = $bindable<() => void>(() => {}),
     deselectAll = $bindable<() => void>(() => {}),
@@ -31,14 +32,13 @@
     someSelected?: boolean
     loading?: boolean
     compact?: boolean
+    selectedIds?: SvelteSet<number>
     refresh?: () => void
     selectAll?: () => void
     deselectAll?: () => void
     redownloadSelected?: () => Promise<void>
     unsubscribeSelected?: () => Promise<void>
   }>()
-
-  let selectedIds = new SvelteSet<number>()
 
   // Keep selectedCount in sync
   $effect(() => {
@@ -53,7 +53,9 @@
   const filteredMods = $derived.by(() => {
     // Always produce a plain array copy so sort never mutates the reactive source
     const base: Mod[] = searchQuery.trim()
-      ? mods.filter((m) => m.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+      ? mods.filter((m: { name: string }) =>
+          m.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+        )
       : [...mods]
 
     if (sortOrder === 'default') return base

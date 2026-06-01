@@ -5,10 +5,11 @@
   import { onDestroy, onMount } from 'svelte'
   import LargeLoadingScreen from './components/LargeLoadingScreen.svelte'
   import ModList from './components/ModList.svelte'
-  import { SvelteMap } from 'svelte/reactivity'
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity'
   import { fade } from 'svelte/transition'
   import Topbar from './components/Topbar.svelte'
   import BottomBar from './components/BottomBar.svelte'
+  import Pagebar from './components/Pagebar.svelte'
 
   let gamesLoading = $state<boolean>(true)
   let compact = $state<boolean>(false)
@@ -16,6 +17,7 @@
   let games = $state<Game[]>([])
   let gameBg = $state<string | null>(null)
   let selectedGame = $state<Game | null>(null)
+  let selectedModIds = new SvelteSet<number>()
   let mods = $state<Mod[]>([])
   let modsLoading = $state(false)
   let modListAllSelected = $state(false)
@@ -38,6 +40,9 @@
     compact = !compact
   })
   let modListSelectAll = $state<() => void>(() => {})
+  let addToPlaylist = $state<() => void>(() => {
+    console.log('Adding to playlist:', [...selectedModIds])
+  })
   let modListDeselectAll = $state<() => void>(() => {})
   let modListRedownload = $state<() => Promise<void>>(async () => {})
   let modListUnsubscribe = $state<() => Promise<void>>(async () => {})
@@ -207,6 +212,7 @@
     <main>
       <Sidebar {games} bind:selectedGame />
       <div class="content">
+        <Pagebar/>
         <Topbar
           allSelected={modListAllSelected}
           someSelected={modListSomeSelected}
@@ -226,6 +232,7 @@
           bind:allSelected={modListAllSelected}
           bind:someSelected={modListSomeSelected}
           {compact}
+          selectedIds={selectedModIds}
           {selectedGame}
           {mods}
           {searchQuery}
@@ -242,6 +249,7 @@
           selectedCount={modListSelectedCount}
           onRedownload={modListRedownload}
           onUnsubscribe={modListUnsubscribe}
+          onAddToPlaylist={addToPlaylist}
         />
       </div>
     </main>

@@ -85,17 +85,17 @@
     <Dropdown options={SORT_OPTIONS} bind:value={sortOrder} disabled={!selectedGame || loading} />
 
     <Tooltip text="Toggle Compact Mode">
-      <button class="pill-button" onclick={onToggleCompact}>
+      <button class="round-button" onclick={onToggleCompact}>
         {#if compact}
-          <LsiconDensityLFilled width={12} height={12} />
+          <LsiconDensityLFilled width={16} height={16} />
         {:else}
-          <LsiconDensitySFilled width={12} height={12} />
+          <LsiconDensitySFilled width={16} height={16} />
         {/if}
       </button>
     </Tooltip>
     <Tooltip text="Refresh">
-      <button class="pill-button" onclick={onRefresh} disabled={!selectedGame || loading}>
-        <IconamoonSynchronize width={12} height={12} />
+      <button class="round-button" onclick={onRefresh} disabled={!selectedGame || loading}>
+        <IconamoonSynchronize width={16} height={16} />
       </button>
     </Tooltip>
   </div>
@@ -195,5 +195,10 @@
     font-size: var(--font-size-small);
     color: var(--surface-muted);
     white-space: nowrap;
+  }
+  .topbar :global(.round-button) {
+    width: 32px;
+    height: 32px;
+    /* any overrides */
   }
 </style>
