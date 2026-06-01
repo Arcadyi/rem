@@ -16,10 +16,10 @@
   </button>
   <button
     class="pill-button"
-    class:selected={currentPage === 'playlists'}
-    onclick={() => (currentPage = 'playlists')}
+    class:selected={currentPage === 'playsets'}
+    onclick={() => (currentPage = 'playsets')}
   >
-    Playlists
+    Playsets
   </button>
 </div>
 
@@ -29,11 +29,18 @@
     align-items: center;
     height: 48px;
     justify-content: start;
-    gap: var(--spacing-xxs);
     padding: var(--spacing-xs);
     border-radius: var(--radius-xs);
     flex-shrink: 0;
     -webkit-app-region: no-drag;
+  }
+
+  .pill-button:first-child {
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+  }
+
+  .pill-button:last-child {
+    border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
   }
 
   .pill-button.selected {

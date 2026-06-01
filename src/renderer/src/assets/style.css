@@ -84,7 +84,7 @@ a:hover {
   color: #535bf2;
 }
 
-body, html, #app {
+body, html, dialog, h1, h2, h3 #app {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -92,6 +92,20 @@ body, html, #app {
   overflow: hidden;
   font-family: "Open Sans", sans-serif;
   background: transparent;
+  color: var(--surface);
+}
+
+input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xxl);
+  padding: var(--spacing-xxs) var(--spacing-xl) var(--spacing-xxs) calc(var(--spacing-xs) + 24px);
+  color: var(--surface);
+  font-family: 'Open Sans', sans-serif;
+  font-size: var(--font-size-small);
+  outline: none;
+  transition: border-color var(--animation-fast);
 }
 
 body {

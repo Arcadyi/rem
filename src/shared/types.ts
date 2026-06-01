@@ -38,6 +38,26 @@ export interface Playset {
   appId: number
   mods: Mod[]
   code: string
+  createdAt: number
+  updatedAt: number
+}
+
+export interface NativePlayset {
+  name: string
+  isActive: boolean
+  modIds: number[]
+}
+
+export interface GameIntegrationInfo {
+  appId: number
+  gameName: string
+  description: string
+  canSync: boolean
+}
+
+export interface ShareCodePayload {
+  appId: number
+  modIds: number[]
 }
 
 export interface SteamCookies {
@@ -54,3 +74,9 @@ export interface GameImages {
 }
 
 export type Page = 'mods' | 'playsets'
+
+export interface WorkshopActionResult {
+  itemId: number
+  success: boolean
+  error?: string
+}

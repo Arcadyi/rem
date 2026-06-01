@@ -2,13 +2,15 @@
   import Tooltip from './Tooltip.svelte'
   import IconamoonSignPlus from '../assets/icons/IconamoonSignPlus.svelte'
 
-  let { selectedCount, onRedownload, onUnsubscribe, onAddToPlaylist, onDelete } = $props<{
-    selectedCount: number
-    onRedownload?: () => Promise<void>
-    onUnsubscribe?: () => Promise<void>
-    onAddToPlaylist?: () => void
-    onDelete?: () => Promise<void>
-  }>()
+  let { currentPage, selectedCount, onRedownload, onUnsubscribe, onAddToPlaylist, onDelete } =
+    $props<{
+      currentPage: string
+      selectedCount: number
+      onRedownload?: () => Promise<void>
+      onUnsubscribe?: () => Promise<void>
+      onAddToPlaylist?: () => void
+      onDelete?: () => Promise<void>
+    }>()
 
   let actionLoading = $state(false)
 
@@ -43,9 +45,9 @@
 <div class="bottombar">
   <span class="label">
     {#if selectedCount > 0}
-      {selectedCount} {onDelete ? 'playset' : 'mod'}{selectedCount === 1 ? '' : 's'} selected
+      {selectedCount} {currentPage}{selectedCount === 1 ? '' : 's'} selected
     {:else}
-      No {onDelete ? 'playsets' : 'mods'} selected
+      No {currentPage} selected
     {/if}
   </span>
   <div class="actions">

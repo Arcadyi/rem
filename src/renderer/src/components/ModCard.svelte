@@ -309,8 +309,8 @@
     color: var(--surface);
   }
   .action-btn.danger:hover {
-    color: var(--status-error);
-    border-color: var(--status-error);
+    color: var(--quartenary);
+    border-color: var(--quartenary);
   }
   .action-btn:disabled {
     opacity: 0.3;

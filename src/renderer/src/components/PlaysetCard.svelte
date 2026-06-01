@@ -1,23 +1,34 @@
 <script lang="ts">
-  import type { Playset } from '../../../shared/types'
+  import type { Mod, Playset } from '../../../shared/types'
   import Checkbox from './Checkbox.svelte'
   import Tooltip from './Tooltip.svelte'
+  import PlaysetModCard from './PlaysetModCard.svelte'
+  import IconamoonSignPlus from '../assets/icons/IconamoonSignPlus.svelte'
+  import IconamoonTrashSimpleFill from '../assets/icons/IconamoonTrashSimpleFill.svelte'
+  import IconamoonCopy from '../assets/icons/IconamoonCopy.svelte'
+  import IconamoonCheck from '../assets/icons/IconamoonCheck.svelte'
 
   let {
     playset,
     selected = false,
     onselect,
     onclick,
-    ondelete
+    ondelete,
+    onaddmod,
+    onmodschange
   } = $props<{
     playset: Playset
     selected?: boolean
     onselect: () => void
     onclick?: () => void
     ondelete?: () => void
+    onaddmod?: () => void
+    onmodschange?: (mods: Mod[]) => void
   }>()
 
   let codeCopied = $state(false)
+  let draggingIndex = $state<number | null>(null)
+  let dragOverIndex = $state<number | null>(null)
 
   async function handleCopyCode(e: MouseEvent): Promise<void> {
     e.stopPropagation()
@@ -34,6 +45,51 @@
   function handleClick(): void {
     onclick?.()
   }
+
+  function handleDragStart(e: DragEvent, index: number): void {
+    e.stopPropagation()
+    draggingIndex = index
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', index.toString())
+    }
+  }
+
+  function handleDragOver(e: DragEvent, index: number): void {
+    e.preventDefault()
+    e.stopPropagation()
+    dragOverIndex = index
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move'
+    }
+  }
+
+  function handleDragLeave(e: DragEvent, index: number): void {
+    e.stopPropagation()
+    if (dragOverIndex === index) {
+      dragOverIndex = null
+    }
+  }
+
+  function handleDrop(e: DragEvent, targetIndex: number): void {
+    e.preventDefault()
+    e.stopPropagation()
+    dragOverIndex = null
+    if (draggingIndex === null || draggingIndex === targetIndex) return
+
+    const newMods = [...playset.mods]
+    const [movedMod] = newMods.splice(draggingIndex, 1)
+    newMods.splice(targetIndex, 0, movedMod)
+
+    playset.mods = newMods
+    draggingIndex = null
+    onmodschange?.(newMods)
+  }
+
+  function handleDragEnd(): void {
+    draggingIndex = null
+    dragOverIndex = null
+  }
 </script>
 
 <div
@@ -44,94 +100,88 @@
   tabindex="0"
   onkeydown={(e) => e.key === 'Enter' && handleClick()}
 >
-  <Checkbox
-    checked={selected}
-    onchange={() => {
-      onselect()
-    }}
-  />
+  <div class="playset-header">
+    <Checkbox
+      checked={selected}
+      onchange={() => {
+        onselect()
+      }}
+    />
 
-  <div class="playset-info">
-    <div class="playset-title-wrapper">
-      <span class="playset-name">{playset.name}</span>
+    <div class="playset-info">
+      <div class="playset-title-wrapper">
+        <span class="playset-name">{playset.name}</span>
+      </div>
+      <span class="playset-meta">
+        {playset.mods.length}
+        {playset.mods.length === 1 ? 'mod' : 'mods'}
+      </span>
     </div>
-    <span class="playset-meta">
-      {playset.mods.length}
-      {playset.mods.length === 1 ? 'mod' : 'mods'}
-    </span>
-  </div>
 
-  <div class="playset-code">
-    <span class="code-text">{playset.code}</span>
-  </div>
+    <div class="playset-code">
+      <span class="code-text">{playset.code}</span>
+    </div>
 
-  <div class="playset-actions">
-    <Tooltip text={codeCopied ? 'Copied!' : 'Copy code'}>
-      <button
-        class="action-btn"
-        class:copied={codeCopied}
-        aria-label="Copy playset code"
-        onclick={handleCopyCode}
-      >
-        {#if codeCopied}
-          <!-- Checkmark -->
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        {:else}
-          <!-- Copy -->
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-          </svg>
-        {/if}
-      </button>
-    </Tooltip>
-
-    <Tooltip text="Delete playset">
-      <button class="action-btn danger" aria-label="Delete playset" onclick={handleDelete}>
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+    <div class="playset-actions">
+      <Tooltip text={codeCopied ? 'Copied!' : 'Copy code'}>
+        <button
+          class="action-btn"
+          class:copied={codeCopied}
+          aria-label="Copy playset code"
+          onclick={handleCopyCode}
         >
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-          <path d="M10 11v6M14 11v6" />
-          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-        </svg>
-      </button>
-    </Tooltip>
+          {#if codeCopied}
+            <IconamoonCheck width={16} height={16} />
+          {:else}
+            <IconamoonCopy width={16} height={16} />
+          {/if}
+        </button>
+      </Tooltip>
+      <Tooltip text="Delete playset">
+        <button class="action-btn danger" aria-label="Delete playset" onclick={handleDelete}>
+          <IconamoonTrashSimpleFill width={16} height={16} />
+        </button>
+      </Tooltip>
+    </div>
+  </div>
+
+  <div class="playset-mod-list">
+    {#each playset.mods as mod, index (mod.itemId)}
+      <PlaysetModCard
+        {mod}
+        {index}
+        isDragging={draggingIndex === index}
+        isDragOver={dragOverIndex === index}
+        ondragstart={(e) => handleDragStart(e, index)}
+        ondragover={(e) => handleDragOver(e, index)}
+        ondragleave={(e) => handleDragLeave(e, index)}
+        ondrop={(e) => handleDrop(e, index)}
+        ondragend={handleDragEnd}
+        onremove={(e) => {
+          e.stopPropagation()
+          const newMods = playset.mods.filter((m: Mod) => m.itemId !== mod.itemId)
+          playset.mods = newMods
+          onmodschange?.(newMods)
+        }}
+      />
+    {/each}
+    <button
+      class="add-mod-btn"
+      onclick={(e) => {
+        e.stopPropagation()
+        onaddmod?.()
+      }}
+    >
+      <IconamoonSignPlus width={14} height={14} />
+      Add Mod
+    </button>
   </div>
 </div>
 
 <style>
   .playset-card {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: var(--spacing-xs);
     padding: var(--spacing-xs);
     background: var(--bg-transparent);
@@ -143,12 +193,17 @@
     min-height: 40px;
     flex-shrink: 0;
   }
-  .playset-card:hover {
-    background: var(--border-light);
-  }
+
   .playset-card.selected {
     background: color-mix(in srgb, var(--secondary) 30%, transparent);
     border-color: var(--primary);
+  }
+
+  .playset-header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+    width: 100%;
   }
 
   .playset-info {
@@ -181,6 +236,12 @@
     margin-top: 2px;
   }
 
+  .playset-mod-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
   .playset-code {
     display: flex;
     align-items: center;
@@ -209,6 +270,7 @@
     transition: opacity var(--animation-fast);
     flex-shrink: 0;
   }
+
   .playset-card:hover .playset-actions {
     opacity: 1;
   }
@@ -229,17 +291,42 @@
       color var(--animation-fast),
       border-color var(--animation-fast);
   }
+
   .action-btn:hover {
     background: var(--bg-transparent);
     border-color: var(--border-light);
     color: var(--surface);
   }
+
   .action-btn.copied {
     color: var(--tertiary);
     border-color: var(--tertiary);
   }
+
   .action-btn.danger:hover {
-    color: var(--status-error);
-    border-color: var(--status-error);
+    color: var(--quartenary);
+    border-color: var(--quartenary);
+  }
+
+  .add-mod-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xxs);
+    background: transparent;
+    border: 1px dashed var(--border-light);
+    color: var(--surface-muted);
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    font-size: var(--font-size-small);
+    transition: all var(--animation-fast);
+    margin-top: 2px;
+  }
+
+  .add-mod-btn:hover {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    border-color: var(--primary);
+    color: var(--primary);
   }
 </style>

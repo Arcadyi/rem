@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Game, Mod, Page, Playset, SteamCookies } from '../../shared/types'
+  import type { Game, GameIntegrationInfo, Mod, Page, Playset } from '../../shared/types'
   import Titlebar from './components/Titlebar.svelte'
   import Sidebar from './components/Sidebar.svelte'
   import { onDestroy, onMount } from 'svelte'
@@ -10,11 +10,14 @@
   import { fade } from 'svelte/transition'
   import Topbar from './components/Topbar.svelte'
   import BottomBar from './components/BottomBar.svelte'
+  import CreatePlaysetModal from './components/CreatePlaysetModal.svelte'
+  import ImportPlaysetModal from './components/ImportPlaysetModal.svelte'
 
   let gamesLoading = $state<boolean>(true)
   let compact = $state<boolean>(false)
   let status = $state<string | null>(null)
   let games = $state<Game[]>([])
+  let gameIntegrationInfo = $state<GameIntegrationInfo | null>(null)
   let gameBg = $state<string | null>(null)
   let selectedGame = $state<Game | null>(null)
   let selectedModIds = new SvelteSet<number>()
@@ -28,8 +31,7 @@
   let cookiesRetryInterval: ReturnType<typeof setInterval> | null = null
   let restarting = $state(false)
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let cookies = $state<SteamCookies | null>(null)
+  //let cookies = $state<SteamCookies | null>(null)
   let cookiesLoading = $state(false)
 
   let currentPage = $state<Page>('mods')
@@ -44,6 +46,8 @@
   let playsetSelectAll = $state<() => void>(() => {})
   let playsetDeselectAll = $state<() => void>(() => {})
   let playsetDeleteSelected = $state<() => Promise<void>>(async () => {})
+  let showNewPlaysetModal = $state(false)
+  let showImportPlaysetModal = $state(false)
 
   let searchQuery = $state('')
   let sortOrder = $state<'default' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'>('default')
@@ -85,6 +89,18 @@
         gameBg = images.hero
       })
     }
+  })
+
+  // Load integration info, playsets, and import native playsets in the correct order.
+  // A cancel flag ensures a stale async chain from a previous selectedGame never
+  // overwrites state that belongs to the current selection.
+  $effect(() => {
+    if (!selectedGame) {
+      gameIntegrationInfo = null
+      playsets = []
+      return
+    }
+    refreshPlaysets()
   })
 
   async function preloadAllMods(games: Game[]): Promise<void> {
@@ -156,10 +172,12 @@
   }
 
   async function loadPlaysets(): Promise<void> {
-    if (!selectedGame) return
+    if (!selectedGame) {
+      return
+    }
     playsetsLoading = true
     try {
-      //playsets = await window.steamAPI.getPlaysets(selectedGame.appId)
+      playsets = await window.steamAPI.getPlaysets(selectedGame.appId)
     } catch (e) {
       status = e instanceof Error ? e.message : String(e)
     } finally {
@@ -167,11 +185,42 @@
     }
   }
 
-  // Reload playsets whenever the selected game changes
-  $effect(() => {
-    if (selectedGame) loadPlaysets()
-    else playsets = []
-  })
+  async function refreshPlaysets(): Promise<void> {
+    const game = selectedGame
+    let cancelled = false
+
+    ;(async () => {
+      console.log('[playsets] effect fired — game:', game.appId, game.name)
+
+      const [info] = await Promise.all([
+        window.steamAPI.getGameIntegrationInfo(game.appId),
+        loadPlaysets()
+      ])
+
+      console.log(
+        '[playsets] initial load done — playsets:',
+        playsets.length,
+        '| integrationInfo:',
+        info
+      )
+      if (cancelled) {
+        console.log('[playsets] cancelled after initial load')
+        return
+      }
+      gameIntegrationInfo = info
+
+      const imported = await importNativePlaysets(info)
+      console.log('[playsets] importNativePlaysets returned:', imported)
+      if (imported && !cancelled) {
+        console.log('[playsets] reloading after native import…')
+        await loadPlaysets()
+        console.log('[playsets] after reload — playsets:', playsets.length)
+      }
+    })().catch((e) => {
+      console.error('[playsets] unhandled error in effect chain:', e)
+      if (!cancelled) status = e instanceof Error ? e.message : String(e)
+    })
+  }
 
   // Reset search when switching pages
   $effect(() => {
@@ -184,7 +233,6 @@
     cookiesLoading = true
     try {
       status = 'Loading Cookies'
-      cookies = await window.steamAPI.getSteamCookies()
       steamRunning = false
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -213,7 +261,6 @@
     try {
       status = 'Shutting Down Steam'
       await window.steamAPI.shutdownSteam()
-      cookies = await window.steamAPI.getSteamCookies()
       steamRunning = false
       status = 'Starting Steam'
       await window.steamAPI.startSteam()
@@ -222,6 +269,100 @@
     } finally {
       restarting = false
     }
+  }
+
+  /**
+   * Import any native game playsets that don't yet exist as custom playsets.
+   * Returns true when new playsets were created (caller should reload), false otherwise.
+   *
+   * Mods are snapshotted at call time so the modMap is never stale even if the
+   * reactive `mods` array updates while we are awaiting IPC calls.
+   */
+  async function importNativePlaysets(info: GameIntegrationInfo | null): Promise<boolean> {
+    console.log('[playsets] importNativePlaysets — info:', info)
+    if (!selectedGame) {
+      console.log('[playsets] skipping — no selectedGame')
+      return false
+    }
+    if (!info?.canSync) {
+      console.log('[playsets] skipping — canSync is false/null')
+      return false
+    }
+
+    console.log('[playsets] fetching getGamePlaysets + getPlaysets…')
+    const [native, existing] = await Promise.all([
+      window.steamAPI.getGamePlaysets($state.snapshot(selectedGame) as Game),
+      window.steamAPI.getPlaysets(selectedGame.appId)
+    ])
+    console.log(
+      '[playsets] native playsets:',
+      native.map((n) => n.name),
+      '| existing:',
+      existing.map((p) => p.name)
+    )
+
+    const existingNames = new Set(existing.map((p) => p.name))
+    const currentMods = $state.snapshot(mods) as Mod[]
+    console.log('[playsets] mods snapshot size:', currentMods.length)
+    const modMap = new Map(currentMods.map((m) => [m.itemId, m]))
+
+    const toImport = native.filter((n) => !existingNames.has(n.name))
+    console.log(
+      '[playsets] toImport:',
+      toImport.map((n) => n.name)
+    )
+    if (toImport.length === 0) {
+      console.log('[playsets] nothing new to import')
+      return false
+    }
+
+    await Promise.all(
+      toImport.map((n) => {
+        const resolvedMods = n.modIds.flatMap((id) => {
+          const mod = modMap.get(id)
+          return mod ? [mod] : []
+        })
+        console.log(
+          '[playsets] creating playset:',
+          n.name,
+          '— resolved',
+          resolvedMods.length,
+          '/',
+          n.modIds.length,
+          'mods'
+        )
+        return window.steamAPI.createPlayset(n.name, selectedGame!.appId, resolvedMods)
+      })
+    )
+
+    console.log('[playsets] all playsets created successfully')
+    return true
+  }
+
+  async function createPlayset(name: string): Promise<void> {
+    if (!selectedGame) return
+    await window.steamAPI.createPlayset(name, selectedGame.appId, [])
+    if (gameIntegrationInfo?.canSync) {
+      try {
+        await window.steamAPI.syncPlaysetToGame($state.snapshot(selectedGame) as Game, name, [])
+      } catch (e) {
+        console.error('[playset] auto-sync after create failed:', e)
+      }
+    }
+    await loadPlaysets()
+  }
+
+  async function importPlayset(name: string, mods: Mod[]): Promise<void> {
+    if (!selectedGame) return
+    await window.steamAPI.createPlayset(name, selectedGame.appId, mods)
+    if (gameIntegrationInfo?.canSync) {
+      try {
+        await window.steamAPI.syncPlaysetToGame($state.snapshot(selectedGame) as Game, name, mods)
+      } catch (e) {
+        console.error('[playset] auto-sync after import failed:', e)
+      }
+    }
+    await loadPlaysets()
   }
 
   onMount(async () => {
@@ -254,6 +395,7 @@
       <Sidebar {games} bind:selectedGame />
       <div class="content">
         <Topbar
+          {currentPage}
           allSelected={currentPage === 'mods' ? modListAllSelected : playsetAllSelected}
           someSelected={currentPage === 'mods' ? modListSomeSelected : playsetSomeSelected}
           {compact}
@@ -265,8 +407,10 @@
           bind:sortOrder
           onSelectAll={currentPage === 'mods' ? modListSelectAll : playsetSelectAll}
           onDeselectAll={currentPage === 'mods' ? modListDeselectAll : playsetDeselectAll}
-          onRefresh={currentPage === 'mods' ? modListRefresh : loadPlaysets}
+          onRefresh={currentPage === 'mods' ? modListRefresh : refreshPlaysets}
           onToggleCompact={toggleCompact}
+          onCreatePlayset={() => (showNewPlaysetModal = true)}
+          onImportPlayset={() => (showImportPlaysetModal = true)}
         />
         <div class="page-content">
           {#if currentPage === 'mods'}
@@ -294,18 +438,29 @@
               selectedIds={selectedPlaysetIds}
               {selectedGame}
               {playsets}
+              availableMods={mods}
               {searchQuery}
               sortOrder={playsetSortOrder}
               loading={playsetsLoading}
+              {gameIntegrationInfo}
               bind:selectedCount={playsetSelectedCount}
+              onRefresh={loadPlaysets}
               bind:selectAll={playsetSelectAll}
               bind:deselectAll={playsetDeselectAll}
               bind:deleteSelected={playsetDeleteSelected}
-              onPlaysetClick={(playset) => console.log('Open playset:', playset)}
+              onPlaysetSync={async (playset: Playset) => {
+                if (!selectedGame) return
+                await window.steamAPI.syncPlaysetToGame(
+                  $state.snapshot(selectedGame) as Game,
+                  playset.name,
+                  $state.snapshot(playset.mods) as Mod[]
+                )
+              }}
             />
           {/if}
         </div>
         <BottomBar
+          {currentPage}
           selectedCount={currentPage === 'mods' ? modListSelectedCount : playsetSelectedCount}
           onRedownload={currentPage === 'mods' ? modListRedownload : undefined}
           onUnsubscribe={currentPage === 'mods' ? modListUnsubscribe : undefined}
@@ -314,6 +469,19 @@
         />
       </div>
     </main>
+    <CreatePlaysetModal
+      open={showNewPlaysetModal}
+      appId={selectedGame?.appId ?? 0}
+      oncreate={createPlayset}
+      onclose={() => (showNewPlaysetModal = false)}
+    />
+    <ImportPlaysetModal
+      open={showImportPlaysetModal}
+      appId={selectedGame?.appId ?? 0}
+      availableMods={mods}
+      oncreate={importPlayset}
+      onclose={() => (showImportPlaysetModal = false)}
+    />
   {/if}
 </div>
 

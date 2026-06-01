@@ -18,6 +18,21 @@ import path from 'node:path'
 import * as fs from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { openModDirectory, openModPage, redownloadMods, unsubscribeFromMods } from './steamWorkshop'
+import {
+  createPlayset,
+  decodeShareCode,
+  deletePlaysets,
+  getPlayset,
+  getPlaysets,
+  reorderPlaysetMods,
+  updatePlayset
+} from './playsets'
+import {
+  deletePlaysetConfig,
+  getGamePlaysets,
+  getIntegrationInfo,
+  syncPlaysetToGame
+} from './gameIntegrations'
 
 function shutdownSteamAsync(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -39,7 +54,6 @@ const isWin11 =
   process.platform === 'win32' && parseInt(os.release().split('.')[2] ?? '0', 10) >= 22000
 
 function createWindow(): void {
-  // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -72,8 +86,6 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -85,22 +97,18 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'steamasset', privileges: { secure: true, supportFetchAPI: true } }
 ])
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
   ipcMain.on('ping', () => console.log('pong'))
+
+  // -------------------------------------------------------------------------
+  // Steam / mod handlers (unchanged)
+  // -------------------------------------------------------------------------
 
   ipcMain.handle('getInstalledGames', async () => {
     return await getInstalledGames()
@@ -108,27 +116,25 @@ app.whenReady().then(() => {
   ipcMain.handle('getModsForGame', async (_event, game: Game) => {
     return await getModsForGame(game)
   })
-
   ipcMain.handle('getModsForGameLocal', async (_event, game: Game) => {
     return await getModsForGameLocal(game)
   })
-
   ipcMain.handle('enrichMods', async (_event, mods: Mod[]) => {
     const info = await enrichModsWithRemoteInfo(mods)
     return Object.fromEntries(info)
   })
-
   ipcMain.handle('isSteamRunning', () => isSteamRunning())
   ipcMain.handle('getSteamCookies', () => getSteamCookies())
   ipcMain.handle('shutdownSteam', () => shutdownSteamAsync())
   ipcMain.handle('startSteam', () => startSteam())
   ipcMain.handle('clearCookieCache', () => clearCookieCache())
+
   protocol.handle('steamasset', (request) => {
-    // URL is: steamasset://localhost/<url-encoded-absolute-path>
     const encoded = request.url.slice('steamasset://localhost/'.length)
     const filePath = decodeURIComponent(encoded)
     return net.fetch(pathToFileURL(filePath).toString())
   })
+
   ipcMain.handle('debugSteamPaths', () => {
     const steamPath = getSteamPath()
     const cachePath = path.join(steamPath ?? '', 'appcache', 'librarycache')
@@ -151,7 +157,9 @@ app.whenReady().then(() => {
     })
     return { dir, files }
   })
+
   ipcMain.handle('getGameImages', (_event, appId: number) => getGameImages(appId))
+
   ipcMain.handle('unsubscribeMods', async (_e, mods: Mod[], appId: number) => {
     const cookies = getSteamCookies()
     const acfPath = path.join(
@@ -172,23 +180,48 @@ app.whenReady().then(() => {
 
   ipcMain.handle('openModDirectory', (_e, modPath: string) => openModDirectory(modPath))
   ipcMain.handle('openModPage', (_e, itemId: number) => openModPage(itemId))
+
+  // Playset handlers
+  ipcMain.handle('getPlaysets', (_e, appId: number) => getPlaysets(appId))
+  ipcMain.handle('getGamePlaysets', async (_e, game: Game) => getGamePlaysets(game))
+
+  ipcMain.handle('getPlayset', (_e, id: string) => getPlayset(id))
+
+  ipcMain.handle('createPlayset', (_e, name: string, appId: number, mods: Mod[]) =>
+    createPlayset(name, appId, mods)
+  )
+
+  ipcMain.handle('updatePlayset', (_e, id: string, updates: { name?: string; mods?: Mod[] }) =>
+    updatePlayset(id, updates)
+  )
+
+  ipcMain.handle('reorderPlaysetMods', (_e, id: string, orderedItemIds: number[]) =>
+    reorderPlaysetMods(id, orderedItemIds)
+  )
+
+  ipcMain.handle('deletePlaysets', (_e, ids: string[]) => deletePlaysets(ids))
+
+  ipcMain.handle('deleteGamePlayset', async (_e, game: Game, name: string) => {
+    return deletePlaysetConfig(game, name)
+  })
+
+  ipcMain.handle('decodeShareCode', (_e, code: string) => decodeShareCode(code))
+
+  ipcMain.handle('getGameIntegrationInfo', (_e, appId: number) => getIntegrationInfo(appId))
+
+  ipcMain.handle('syncPlaysetToGame', async (_e, game: Game, playsetName: string, mods: Mod[]) =>
+    syncPlaysetToGame(game, playsetName, mods)
+  )
+
   createWindow()
 
   app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.

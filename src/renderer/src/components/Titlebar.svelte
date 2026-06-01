@@ -4,6 +4,7 @@
   import IconamoonClose from '../assets/icons/IconamoonClose.svelte'
   import Pagebar from './Pagebar.svelte'
   import type { Page } from '../../../shared/types'
+  import RemIcon from '../assets/icons/RemIcon.svelte'
 
   let { currentPage = $bindable<Page>('mods') } = $props<{
     currentPage?: Page
@@ -12,7 +13,10 @@
 
 <div class="titlebar">
   <div class="topbar-left">
-    <h1 class="topbar-name">APSYS</h1>
+    <div class="app-icon">
+      <RemIcon class="app-icon" width={24} height={24} />
+    </div>
+    <span class="topbar-name">REM</span>
     <Pagebar bind:currentPage />
   </div>
 
@@ -38,8 +42,11 @@
     -webkit-app-region: drag;
   }
 
+  .app-icon {
+    margin-top: 10px;
+  }
+
   .topbar-left {
-    width: 20%;
     display: flex;
     align-items: center;
     color: var(--surface);

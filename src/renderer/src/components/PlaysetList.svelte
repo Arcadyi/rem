@@ -1,14 +1,16 @@
 <script lang="ts">
-  import type { Game, Playset } from '../../../shared/types'
+  import type { Game, GameIntegrationInfo, Mod, Playset } from '../../../shared/types'
   import PlaysetCard from './PlaysetCard.svelte'
   import Loader from './Loader.svelte'
   import { SvelteSet } from 'svelte/reactivity'
+  import AddModModal from './AddModModal.svelte'
 
   type SortOrder = 'default' | 'name-asc' | 'name-desc' | 'mod-count-desc' | 'mod-count-asc'
 
   let {
     selectedGame,
     playsets,
+    availableMods = [],
     searchQuery = '',
     sortOrder = 'default',
     selectedCount = $bindable(0),
@@ -16,13 +18,17 @@
     someSelected = $bindable(false),
     loading = false,
     selectedIds = $bindable(new SvelteSet<string>()),
+    gameIntegrationInfo = null,
+    onRefresh = $bindable<() => Promise<void> | void>(() => {}),
     selectAll = $bindable<() => void>(() => {}),
     deselectAll = $bindable<() => void>(() => {}),
     deleteSelected = $bindable<() => Promise<void>>(async () => {}),
-    onPlaysetClick = $bindable<(playset: Playset) => void>(() => {})
+    onPlaysetClick = $bindable<(playset: Playset) => void>(() => {}),
+    onPlaysetSync = $bindable<(playset: Playset) => Promise<void>>(async () => {})
   } = $props<{
     selectedGame: Game | null
     playsets: Playset[]
+    availableMods?: Mod[]
     searchQuery?: string
     sortOrder?: SortOrder
     selectedCount?: number
@@ -30,10 +36,13 @@
     someSelected?: boolean
     loading?: boolean
     selectedIds?: SvelteSet<string>
+    gameIntegrationInfo?: GameIntegrationInfo | null
+    onRefresh?: () => Promise<void> | void
     selectAll?: () => void
     deselectAll?: () => void
     deleteSelected?: () => Promise<void>
     onPlaysetClick?: (playset: Playset) => void
+    onPlaysetSync?: (playset: Playset) => Promise<void>
   }>()
 
   // Keep selectedCount in sync
@@ -101,6 +110,33 @@
     // TODO: Wire up to IPC / API call here
     selectedIds.clear()
   }
+
+  let addingToPlayset = $state<Playset | null>(null)
+
+  async function handleModsChange(playset: Playset, mods: Mod[]): Promise<void> {
+    const snapshotMods = $state.snapshot(mods) as Mod[]
+    await window.steamAPI.updatePlayset(playset.id, { mods: snapshotMods })
+    if (gameIntegrationInfo?.canSync && selectedGame) {
+      await window.steamAPI.syncPlaysetToGame(
+        $state.snapshot(selectedGame) as Game,
+        playset.name,
+        snapshotMods
+      )
+    }
+  }
+
+  async function deletePlayset(playset: Playset): Promise<void> {
+    if (!selectedGame) return
+
+    await window.steamAPI.deletePlaysets([playset.id])
+
+    if (gameIntegrationInfo?.canSync) {
+      await window.steamAPI.deleteGamePlayset($state.snapshot(selectedGame), playset.name)
+    }
+
+    onRefresh?.()
+    selectedIds.clear()
+  }
 </script>
 
 <div class="playset-list">
@@ -121,10 +157,42 @@
         selected={selectedIds.has(playset.id)}
         onselect={() => togglePlayset(playset.id)}
         onclick={() => onPlaysetClick(playset)}
+        ondelete={() => deletePlayset(playset)}
+        onaddmod={() => (addingToPlayset = playset)}
+        onmodschange={(mods) => handleModsChange(playset, mods)}
       />
     {/each}
   {/if}
 </div>
+
+<AddModModal
+  open={!!addingToPlayset}
+  playset={addingToPlayset}
+  {availableMods}
+  onadd={async (newMods) => {
+    if (!addingToPlayset) return
+    const target = addingToPlayset
+    const merged = $state.snapshot([...target.mods, ...newMods]) as Mod[]
+    // Update local reactive state immediately — same pattern PlaysetCard uses
+    // for reorders/removes — so the card re-renders without a loading flash.
+    target.mods = merged
+    addingToPlayset = null
+    // Persist and sync in the background now that the modal is closed.
+    await window.steamAPI.updatePlayset(target.id, { mods: merged })
+    if (gameIntegrationInfo?.canSync && selectedGame) {
+      try {
+        await window.steamAPI.syncPlaysetToGame(
+          $state.snapshot(selectedGame) as Game,
+          target.name,
+          merged
+        )
+      } catch (e) {
+        console.error('[playset] auto-sync after add failed:', e)
+      }
+    }
+  }}
+  onclose={() => (addingToPlayset = null)}
+/>
 
 <style>
   .playset-list {

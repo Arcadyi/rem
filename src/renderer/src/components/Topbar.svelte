@@ -9,6 +9,8 @@
   import LsiconDensityLFilled from '../assets/icons/LsiconDensityLFilled.svelte'
   import LsiconDensitySFilled from '../assets/icons/LsiconDensitySFilled.svelte'
   import Tooltip from './Tooltip.svelte'
+  import IconamoonSignPlus from '../assets/icons/IconamoonSignPlus.svelte'
+  import IconamoonCloudDownload from '../assets/icons/IconamoonCloudDownload.svelte'
 
   type SortOrder = 'default' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'
 
@@ -21,6 +23,7 @@
   ]
 
   let {
+    currentPage,
     allSelected = false,
     someSelected = false,
     compact = false,
@@ -32,8 +35,11 @@
     onSelectAll,
     onDeselectAll,
     onRefresh,
-    onToggleCompact
+    onToggleCompact,
+    onCreatePlayset,
+    onImportPlayset
   } = $props<{
+    currentPage: string
     allSelected?: boolean
     someSelected?: boolean
     compact: boolean
@@ -47,6 +53,8 @@
     onDeselectAll: () => void
     onRefresh: () => void
     onToggleCompact: () => void
+    onCreatePlayset?: () => void
+    onImportPlayset?: () => void
   }>()
 
   function handleCheckbox(checked: boolean): void {
@@ -98,6 +106,18 @@
         <IconamoonSynchronize width={16} height={16} />
       </button>
     </Tooltip>
+    {#if currentPage === 'playsets'}
+      <Tooltip text="Import Playset">
+        <button class="round-button" onclick={onImportPlayset} disabled={!selectedGame || loading}>
+          <IconamoonCloudDownload width={18} height={18} />
+        </button>
+      </Tooltip>
+      <Tooltip text="New Playset">
+        <button class="round-button" onclick={onCreatePlayset} disabled={!selectedGame || loading}>
+          <IconamoonSignPlus width={16} height={16} />
+        </button>
+      </Tooltip>
+    {/if}
   </div>
 </div>
 
