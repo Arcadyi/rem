@@ -2,11 +2,12 @@
   import Tooltip from './Tooltip.svelte'
   import IconamoonSignPlus from '../assets/icons/IconamoonSignPlus.svelte'
 
-  let { selectedCount, onRedownload, onUnsubscribe, onAddToPlaylist } = $props<{
+  let { selectedCount, onRedownload, onUnsubscribe, onAddToPlaylist, onDelete } = $props<{
     selectedCount: number
-    onRedownload: () => Promise<void>
-    onUnsubscribe: () => Promise<void>
-    onAddToPlaylist: () => void
+    onRedownload?: () => Promise<void>
+    onUnsubscribe?: () => Promise<void>
+    onAddToPlaylist?: () => void
+    onDelete?: () => Promise<void>
   }>()
 
   let actionLoading = $state(false)
@@ -14,7 +15,7 @@
   async function handleRedownload(): Promise<void> {
     actionLoading = true
     try {
-      await onRedownload()
+      await onRedownload?.()
     } finally {
       actionLoading = false
     }
@@ -23,7 +24,16 @@
   async function handleUnsubscribe(): Promise<void> {
     actionLoading = true
     try {
-      await onUnsubscribe()
+      await onUnsubscribe?.()
+    } finally {
+      actionLoading = false
+    }
+  }
+
+  async function handleDelete(): Promise<void> {
+    actionLoading = true
+    try {
+      await onDelete?.()
     } finally {
       actionLoading = false
     }
@@ -33,39 +43,56 @@
 <div class="bottombar">
   <span class="label">
     {#if selectedCount > 0}
-      {selectedCount} mod{selectedCount === 1 ? '' : 's'} selected
+      {selectedCount} {onDelete ? 'playset' : 'mod'}{selectedCount === 1 ? '' : 's'} selected
     {:else}
-      No mods selected
+      No {onDelete ? 'playsets' : 'mods'} selected
     {/if}
   </span>
   <div class="actions">
-    <Tooltip text="Add selected items to a playlist">
-      <button
-        class="round-button"
-        onclick={onAddToPlaylist}
-        disabled={actionLoading || selectedCount === 0}
-      >
-        <IconamoonSignPlus width={24} height={24} />
-      </button>
-    </Tooltip>
-    <Tooltip text="Force redownload of the selected items">
-      <button
-        class="pill-button"
-        onclick={handleRedownload}
-        disabled={actionLoading || selectedCount === 0}
-      >
-        Redownload
-      </button>
-    </Tooltip>
-    <Tooltip text="Unsubscribe from the selected items">
-      <button
-        class="pill-button danger"
-        onclick={handleUnsubscribe}
-        disabled={actionLoading || selectedCount === 0}
-      >
-        Unsubscribe
-      </button>
-    </Tooltip>
+    {#if onAddToPlaylist}
+      <Tooltip text="Add selected items to a playlist">
+        <button
+          class="round-button"
+          onclick={onAddToPlaylist}
+          disabled={actionLoading || selectedCount === 0}
+        >
+          <IconamoonSignPlus width={24} height={24} />
+        </button>
+      </Tooltip>
+    {/if}
+    {#if onRedownload}
+      <Tooltip text="Force redownload of the selected items">
+        <button
+          class="pill-button"
+          onclick={handleRedownload}
+          disabled={actionLoading || selectedCount === 0}
+        >
+          Redownload
+        </button>
+      </Tooltip>
+    {/if}
+    {#if onUnsubscribe}
+      <Tooltip text="Unsubscribe from the selected items">
+        <button
+          class="pill-button danger"
+          onclick={handleUnsubscribe}
+          disabled={actionLoading || selectedCount === 0}
+        >
+          Unsubscribe
+        </button>
+      </Tooltip>
+    {/if}
+    {#if onDelete}
+      <Tooltip text="Delete the selected playsets">
+        <button
+          class="pill-button danger"
+          onclick={handleDelete}
+          disabled={actionLoading || selectedCount === 0}
+        >
+          Delete
+        </button>
+      </Tooltip>
+    {/if}
   </div>
 </div>
 
@@ -81,17 +108,14 @@
     background: var(--bg-transparent);
     padding: var(--spacing-xs);
   }
-
   .label {
     font-size: var(--font-size-small);
     color: var(--surface-muted);
   }
-
   .actions {
     display: flex;
     gap: var(--spacing-xxs);
   }
-
   .pill-button.danger:hover {
     background: var(--quartenary);
     border-color: var(--quartenary);

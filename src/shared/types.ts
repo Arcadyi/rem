@@ -27,12 +27,12 @@ export interface WorkshopItemInfo {
   previewUrl: string | null
 }
 
-export interface PlaylistModEntry {
+export interface PlaysetModEntry {
   mod: Mod
   position: number
 }
 
-export interface Playlist {
+export interface Playset {
   id: string
   name: string
   appId: number
@@ -52,3 +52,5 @@ export interface GameImages {
   hero: string | null
   logo: string | null
 }
+
+export type Page = 'mods' | 'playsets'

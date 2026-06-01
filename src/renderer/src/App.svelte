@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type { Game, Mod, SteamCookies } from '../../shared/types'
+  import type { Game, Mod, Page, Playset, SteamCookies } from '../../shared/types'
   import Titlebar from './components/Titlebar.svelte'
   import Sidebar from './components/Sidebar.svelte'
   import { onDestroy, onMount } from 'svelte'
   import LargeLoadingScreen from './components/LargeLoadingScreen.svelte'
   import ModList from './components/ModList.svelte'
+  import PlaysetList from './components/PlaysetList.svelte'
   import { SvelteMap, SvelteSet } from 'svelte/reactivity'
   import { fade } from 'svelte/transition'
   import Topbar from './components/Topbar.svelte'
   import BottomBar from './components/BottomBar.svelte'
-  import Pagebar from './components/Pagebar.svelte'
 
   let gamesLoading = $state<boolean>(true)
   let compact = $state<boolean>(false)
@@ -32,8 +32,24 @@
   let cookies = $state<SteamCookies | null>(null)
   let cookiesLoading = $state(false)
 
+  let currentPage = $state<Page>('mods')
+
+  // Playset state
+  let playsets = $state<Playset[]>([])
+  let playsetsLoading = $state(false)
+  let selectedPlaysetIds = new SvelteSet<string>()
+  let playsetAllSelected = $state(false)
+  let playsetSomeSelected = $state(false)
+  let playsetSelectedCount = $state(0)
+  let playsetSelectAll = $state<() => void>(() => {})
+  let playsetDeselectAll = $state<() => void>(() => {})
+  let playsetDeleteSelected = $state<() => Promise<void>>(async () => {})
+
   let searchQuery = $state('')
   let sortOrder = $state<'default' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'>('default')
+  let playsetSortOrder = $state<
+    'default' | 'name-asc' | 'name-desc' | 'mod-count-desc' | 'mod-count-asc'
+  >('default')
   let modListSelectedCount = $state(0)
   let modListRefresh = $state<() => void>(() => refreshMods())
   let toggleCompact = $state<() => void>(() => {
@@ -139,6 +155,31 @@
     }
   }
 
+  async function loadPlaysets(): Promise<void> {
+    if (!selectedGame) return
+    playsetsLoading = true
+    try {
+      //playsets = await window.steamAPI.getPlaysets(selectedGame.appId)
+    } catch (e) {
+      status = e instanceof Error ? e.message : String(e)
+    } finally {
+      playsetsLoading = false
+    }
+  }
+
+  // Reload playsets whenever the selected game changes
+  $effect(() => {
+    if (selectedGame) loadPlaysets()
+    else playsets = []
+  })
+
+  // Reset search when switching pages
+  $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    currentPage
+    searchQuery = ''
+  })
+
   async function loadCookies(): Promise<void> {
     cookiesLoading = true
     try {
@@ -205,51 +246,71 @@
       transition:fade={{ duration: 600 }}
     ></div>
   {/key}
-  <Titlebar />
+  <Titlebar bind:currentPage />
   {#if gamesLoading || cookiesLoading || steamRunning}
     <LargeLoadingScreen {status} {steamRunning} {restarting} onrestart={restartSteam} />
   {:else}
     <main>
       <Sidebar {games} bind:selectedGame />
       <div class="content">
-        <Pagebar/>
         <Topbar
-          allSelected={modListAllSelected}
-          someSelected={modListSomeSelected}
+          allSelected={currentPage === 'mods' ? modListAllSelected : playsetAllSelected}
+          someSelected={currentPage === 'mods' ? modListSomeSelected : playsetSomeSelected}
           {compact}
           {selectedGame}
-          selectedCount={modListSelectedCount}
-          totalCount={mods.length}
-          loading={modsLoading}
+          selectedCount={currentPage === 'mods' ? modListSelectedCount : playsetSelectedCount}
+          totalCount={currentPage === 'mods' ? mods.length : playsets.length}
+          loading={currentPage === 'mods' ? modsLoading : playsetsLoading}
           bind:searchQuery
           bind:sortOrder
-          onSelectAll={modListSelectAll}
-          onDeselectAll={modListDeselectAll}
-          onRefresh={modListRefresh}
+          onSelectAll={currentPage === 'mods' ? modListSelectAll : playsetSelectAll}
+          onDeselectAll={currentPage === 'mods' ? modListDeselectAll : playsetDeselectAll}
+          onRefresh={currentPage === 'mods' ? modListRefresh : loadPlaysets}
           onToggleCompact={toggleCompact}
         />
-        <ModList
-          bind:allSelected={modListAllSelected}
-          bind:someSelected={modListSomeSelected}
-          {compact}
-          selectedIds={selectedModIds}
-          {selectedGame}
-          {mods}
-          {searchQuery}
-          {sortOrder}
-          loading={modsLoading}
-          bind:selectedCount={modListSelectedCount}
-          bind:refresh={modListRefresh}
-          bind:selectAll={modListSelectAll}
-          bind:deselectAll={modListDeselectAll}
-          bind:redownloadSelected={modListRedownload}
-          bind:unsubscribeSelected={modListUnsubscribe}
-        />
+        <div class="page-content">
+          {#if currentPage === 'mods'}
+            <ModList
+              bind:allSelected={modListAllSelected}
+              bind:someSelected={modListSomeSelected}
+              {compact}
+              selectedIds={selectedModIds}
+              {selectedGame}
+              {mods}
+              {searchQuery}
+              {sortOrder}
+              loading={modsLoading}
+              bind:selectedCount={modListSelectedCount}
+              bind:refresh={modListRefresh}
+              bind:selectAll={modListSelectAll}
+              bind:deselectAll={modListDeselectAll}
+              bind:redownloadSelected={modListRedownload}
+              bind:unsubscribeSelected={modListUnsubscribe}
+            />
+          {:else if currentPage === 'playsets'}
+            <PlaysetList
+              bind:allSelected={playsetAllSelected}
+              bind:someSelected={playsetSomeSelected}
+              selectedIds={selectedPlaysetIds}
+              {selectedGame}
+              {playsets}
+              {searchQuery}
+              sortOrder={playsetSortOrder}
+              loading={playsetsLoading}
+              bind:selectedCount={playsetSelectedCount}
+              bind:selectAll={playsetSelectAll}
+              bind:deselectAll={playsetDeselectAll}
+              bind:deleteSelected={playsetDeleteSelected}
+              onPlaysetClick={(playset) => console.log('Open playset:', playset)}
+            />
+          {/if}
+        </div>
         <BottomBar
-          selectedCount={modListSelectedCount}
-          onRedownload={modListRedownload}
-          onUnsubscribe={modListUnsubscribe}
-          onAddToPlaylist={addToPlaylist}
+          selectedCount={currentPage === 'mods' ? modListSelectedCount : playsetSelectedCount}
+          onRedownload={currentPage === 'mods' ? modListRedownload : undefined}
+          onUnsubscribe={currentPage === 'mods' ? modListUnsubscribe : undefined}
+          onAddToPlaylist={currentPage === 'mods' ? addToPlaylist : undefined}
+          onDelete={currentPage === 'playsets' ? playsetDeleteSelected : undefined}
         />
       </div>
     </main>
@@ -306,5 +367,13 @@
     overflow: hidden;
     gap: var(--spacing-xs);
     min-width: 0;
+  }
+
+  .page-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
   }
 </style>

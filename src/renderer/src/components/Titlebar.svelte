@@ -1,15 +1,20 @@
-<script>
+<script lang="ts">
   import IconamoonSignMinusFill from '../assets/icons/IconamoonSignMinusFill.svelte'
   import IconamoonScreenFull from '../assets/icons/IconamoonScreenFull.svelte'
   import IconamoonClose from '../assets/icons/IconamoonClose.svelte'
+  import Pagebar from './Pagebar.svelte'
+  import type { Page } from '../../../shared/types'
+
+  let { currentPage = $bindable<Page>('mods') } = $props<{
+    currentPage?: Page
+  }>()
 </script>
 
 <div class="titlebar">
   <div class="topbar-left">
     <h1 class="topbar-name">APSYS</h1>
+    <Pagebar bind:currentPage />
   </div>
-
-  <div class="topbar-center"></div>
 
   <div class="topbar-right">
     <button class="topbar-button" onclick={() => window.api.minimize()}>
@@ -28,6 +33,7 @@
   .titlebar {
     display: flex;
     height: 48px;
+    justify-content: space-between;
     padding: var(--spacing-xs) var(--spacing-m);
     -webkit-app-region: drag;
   }
@@ -38,13 +44,6 @@
     align-items: center;
     color: var(--surface);
     gap: var(--spacing-xxs);
-  }
-  .topbar-center {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--surface);
   }
 
   .topbar-right {
@@ -57,15 +56,6 @@
   .topbar-name {
     font-size: var(--font-size-subheader);
     font-weight: var(--font-weight-heavy);
-  }
-
-  .topbar-version {
-    font-size: var(--font-size-tiny);
-    font-weight: var(--font-weight-extralight);
-    font-family:
-      DM Sans,
-      sans-serif;
-    padding: var(--spacing-xxs);
   }
 
   .topbar-button {
