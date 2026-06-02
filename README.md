@@ -1,6 +1,6 @@
 # REM — Real Easy Mod Manager
 
-A fast, clean mod manager for Steam games. Built with Electron, Svelte, and a strong opinion that managing mods shouldn't be a chore.
+A fast, clean mod manager for Steam games with playsets and other QOL features
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue)
 ![Version](https://img.shields.io/github/v/release/Arcadyi/rem)
