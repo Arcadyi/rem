@@ -9,8 +9,10 @@
   let newVersion = $state('')
   let progress = $state(0)
   let errorMessage = $state('')
+  let currentVersion = $state<string>('—')
 
-  onMount(() => {
+  onMount(async () => {
+    currentVersion = await window.updaterAPI.getVersion()
     window.updaterAPI.onUpdateAvailable(({ version }) => {
       newVersion = version
       updateState = 'available'
@@ -62,7 +64,7 @@
       <p class="message">
         <span class="version">v{newVersion}</span> is ready to download.
       </p>
-      <p class="sub">You're on v{window.electron.process.versions.app ?? '—'}.</p>
+      <p class="sub">You're on v{currentVersion}.</p>
     {:else if updateState === 'downloading'}
       <p class="message">Downloading update…</p>
       <div class="progress-track">
