@@ -45,5 +45,5 @@ npmRebuild: true
 publish:
   provider: github
   owner: arcadyi
-  repo: TODO
+  repo: https://github.com/Arcadyi/rem.git
   releaseType: release
