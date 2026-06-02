@@ -115,79 +115,40 @@
 
 <Modal {open} title="Import Playset" {onclose}>
   <div class="form">
-    <!-- Code field -->
-    <div class="form">
-      <div class="field">
-        <label class="label" for="share-code-input">Share Code</label>
-        <div class="code-row">
-          <input
-            id="share-code-input"
-            bind:value={code}
-            class="input"
-            class:input--error={!!codeError}
-            class:input--valid={codeValidated}
-            type="text"
-            placeholder="REM-…"
-            autocomplete="off"
-            spellcheck="false"
-            oninput={handleCodeInput}
-            onkeydown={async (e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                await validateCode()
-              }
-            }}
-          />
-          <button
-            class="btn btn--ghost validate-btn"
-            onclick={validateCode}
-            disabled={!code.trim() || codeValidated}
-          >
-            {codeValidated ? '✓' : 'Validate'}
-          </button>
-        </div>
-        {#if codeError}
-          <span class="error">{codeError}</span>
-        {/if}
+    <div class="field">
+      <label class="label" for="share-code-input">Share Code</label>
+      <div class="code-row">
+        <input
+          id="share-code-input"
+          bind:value={code}
+          class="input"
+          class:input--error={!!codeError}
+          class:input--valid={codeValidated}
+          type="text"
+          placeholder="REM-…"
+          autocomplete="off"
+          spellcheck="false"
+          oninput={handleCodeInput}
+          onkeydown={async (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              await validateCode()
+            }
+          }}
+        />
+        <button
+          class="btn btn--ghost validate-btn"
+          onclick={validateCode}
+          disabled={!code.trim() || codeValidated}
+        >
+          {codeValidated ? '✓' : 'Validate'}
+        </button>
       </div>
-
-      {#if codeValidated}
-        <div class="preview">
-          <span class="preview-stat">
-            <span class="preview-count">{resolvedMods.length}</span>
-            {resolvedMods.length === 1 ? 'mod' : 'mods'} found locally
-          </span>
-          {#if unknownCount > 0}
-            <span class="preview-warning">
-              {unknownCount}
-              {unknownCount === 1 ? 'mod is' : 'mods are'} not installed and will be skipped.
-            </span>
-          {/if}
-        </div>
-
-        <div class="field">
-          <label class="label" for="playset-name-input">Playset Name</label>
-          <input
-            id="playset-name-input"
-            bind:value={name}
-            class="input"
-            class:input--error={!!nameError}
-            type="text"
-            placeholder="My Imported Playset"
-            maxlength={80}
-            autocomplete="off"
-            spellcheck="false"
-            oninput={() => (nameError = '')}
-            onkeydown={(e) => e.key === 'Enter' && handleSubmit()}
-          />
-          {#if nameError}
-            <span class="error">{nameError}</span>
-          {/if}
-        </div>
+      {#if codeError}
+        <span class="error">{codeError}</span>
       {/if}
     </div>
 
-    <!-- Preview — shown once code is decoded successfully -->
     {#if codeValidated}
       <div class="preview">
         <span class="preview-stat">
@@ -202,10 +163,10 @@
         {/if}
       </div>
 
-      <!-- Name field — only shown after valid code -->
-      <label class="field">
-        <span class="label">Playset Name</span>
+      <div class="field">
+        <label class="label" for="playset-name-input">Playset Name</label>
         <input
+          id="playset-name-input"
           bind:value={name}
           class="input"
           class:input--error={!!nameError}
@@ -220,7 +181,7 @@
         {#if nameError}
           <span class="error">{nameError}</span>
         {/if}
-      </label>
+      </div>
     {/if}
   </div>
 
