@@ -3,10 +3,7 @@ import { shell } from 'electron'
 import type { Mod, SteamCookies } from '../shared/types'
 import { parseVdf } from './steam'
 
-// ---------------------------------------------------------------------------
 // VDF serializer (mirrors the parser in steam.ts)
-// ---------------------------------------------------------------------------
-
 type VdfValue = string | VdfNode
 interface VdfNode {
   [key: string]: VdfValue
@@ -29,20 +26,70 @@ function serializeVdf(node: VdfNode, indent = 0): string {
   return out
 }
 
-// Re-export the parser interface so we can import from steam.ts
-// We call parseVdf via a dynamic import to avoid circular deps
 function parseAcf(filePath: string): VdfNode {
   return parseVdf(fs.readFileSync(filePath, 'utf8'))
-  // remove async — no longer needed
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 // ACF manipulation
 /**
- * Removes the given itemIds from WorkshopItemsInstalled and WorkshopItemDetails
- * inside appworkshop_<appId>.acf so Steam treats those items as missing/corrupt
- * and re-queues them for download on next launch.
+ * Marks items as stale by zeroing their timestamps and manifest IDs rather
+ * than deleting the entries entirely. Deletion can leave Steam in an
+ * inconsistent state if it has the subscription cached in memory; zeroing
+ * the fields signals "needs update" through the normal update path instead.
  */
-async function stripAcfEntries(acfPath: string, itemIds: number[]): Promise<void> {
+function markAcfEntriesStale(acfPath: string, itemIds: number[]): void {
+  if (!fs.existsSync(acfPath)) return
+
+  const root = parseAcf(acfPath)
+  const workshop = (root['appworkshop'] ?? root) as VdfNode
+
+  const installed = workshop['workshopitemsinstalled']
+  const details = workshop['workshopitemdetails']
+
+  for (const id of itemIds) {
+    const key = String(id)
+
+    // Zero out installed entry — keeps the key present so Steam knows it's
+    // subscribed, but the zeroed manifest forces a re-download check.
+    if (installed && typeof installed === 'object') {
+      const entry = (installed as VdfNode)[key]
+      if (entry && typeof entry === 'object') {
+        ;(installed as VdfNode)[key] = {
+          ...(entry as VdfNode),
+          size: '0',
+          timeupdated: '0',
+          manifest: '0'
+        }
+      }
+    }
+
+    // Zero out details entry similarly
+    if (details && typeof details === 'object') {
+      const entry = (details as VdfNode)[key]
+      if (entry && typeof entry === 'object') {
+        ;(details as VdfNode)[key] = {
+          ...(entry as VdfNode),
+          manifest: '0',
+          timeupdated: '0'
+        }
+      }
+    }
+  }
+
+  const rootKey = 'appworkshop' in root ? 'appworkshop' : Object.keys(root)[0]
+  const serialized = `"${rootKey}"\n{\n${serializeVdf(workshop, 1)}}\n`
+  fs.writeFileSync(acfPath, serialized, 'utf8')
+}
+
+/**
+ * Fully removes items from the ACF. Used for unsubscribe where we genuinely
+ * want Steam to forget the item, not just re-download it.
+ */
+function stripAcfEntries(acfPath: string, itemIds: number[]): void {
   if (!fs.existsSync(acfPath)) return
 
   const root = parseAcf(acfPath)
@@ -57,13 +104,12 @@ async function stripAcfEntries(acfPath: string, itemIds: number[]): Promise<void
     }
   }
 
-  // Write back — wrap in root key to preserve original structure
   const rootKey = 'appworkshop' in root ? 'appworkshop' : Object.keys(root)[0]
   const serialized = `"${rootKey}"\n{\n${serializeVdf(workshop, 1)}}\n`
   fs.writeFileSync(acfPath, serialized, 'utf8')
 }
 
-// Local file deletion
+// Local file helpers
 function deleteModFiles(mod: Mod): void {
   if (!fs.existsSync(mod.path)) return
   fs.rmSync(mod.path, { recursive: true, force: true })
@@ -137,16 +183,16 @@ export async function unsubscribeFromMods(
     }
   }
 
-  // Clean up local files and ACF entries for successfully unsubscribed mods
   const succeeded = results.filter((r) => r.success).map((r) => r.itemId)
   const succeededMods = mods.filter((m) => succeeded.includes(m.itemId))
 
   for (const mod of succeededMods) deleteModFiles(mod)
-  await stripAcfEntries(workshopAcfPath, succeeded)
+  stripAcfEntries(workshopAcfPath, succeeded)
 
   return results
 }
 
+// Subscribe
 export async function subscribeMods(
   itemIds: number[],
   appId: number,
@@ -164,15 +210,27 @@ export async function subscribeMods(
   return results
 }
 
-// Force redownload
-
 /**
- * Full force redownload sequence per mod:
- *  1. Delete local files
- *  2. Strip ACF entries so Steam sees it as missing
- *  3. Unsubscribe via API
- *  4. Resubscribe via API
- *  5. Trigger Steam validation to kick off the download
+ * Force-redownload sequence:
+ *
+ *  1. Unsubscribe via API  (commit the "gone" state to Steam's servers first)
+ *  2. Brief pause          (let Steam's backend register the unsubscribe before
+ *                           the resubscribe arrives — avoids a server-side no-op)
+ *  3. Resubscribe via API  (Steam now queues a fresh download with the latest manifest)
+ *  4. Delete local files   (after the API round-trip so errors don't orphan the sub)
+ *  5. Mark ACF stale       (zero manifest/timestamps so Steam re-downloads rather
+ *                           than skipping because it thinks local files are current)
+ *  6. Per-item download    (steam://workshop_download_item nudges Steam to process
+ *                           the queue immediately instead of waiting for next launch)
+ *  7. Open downloads page  (brings the Steam download manager into view so the user
+ *                           can see progress; also prompts Steam to flush its queue)
+ *
+ * Why this order matters:
+ * - Doing local cleanup (steps 4–5) before the API calls (old order) meant a failed
+ *   API call left the mod deleted locally but still "current" in Steam's eyes, so
+ *   Steam would never re-queue it.
+ * - Fully deleting ACF entries (old approach) can confuse Steam if it has the
+ *   subscription cached in memory; zeroing the manifest is the safer signal.
  */
 export async function redownloadMods(
   mods: Mod[],
@@ -184,15 +242,25 @@ export async function redownloadMods(
 
   for (const mod of mods) {
     try {
-      // Step 1: delete local files
+      // Tell Steam's servers this subscription is gone
+      await unsubscribeFromMod(mod.itemId, appId, cookies)
+
+      // Brief pause so the unsubscribe is committed server-side before
+      // the resubscribe arrives — without this, Steam can silently no-op the pair
+      await sleep(800)
+
+      // Resubscribe — Steam now records this as a brand-new subscription
+      // and will serve the latest manifest on next download
+      await subscribeToMod(mod.itemId, appId, cookies)
+
+      // Step 4: remove local files only after the API round-trip succeeds, so a
+      // network error doesn't leave the user with no local copy and no active sub
       deleteModFiles(mod)
 
-      // Step 2: strip ACF entries
-      await stripAcfEntries(workshopAcfPath, [mod.itemId])
-
-      // Step 3 & 4: unsubscribe then resubscribe
-      await unsubscribeFromMod(mod.itemId, appId, cookies)
-      await subscribeToMod(mod.itemId, appId, cookies)
+      // Step 5: zero out ACF timestamps/manifest so Steam's local state agrees
+      // that this item needs a fresh download (rather than skipping it because
+      // timeupdated still matches what it downloaded before)
+      markAcfEntriesStale(workshopAcfPath, [mod.itemId])
 
       results.push({ itemId: mod.itemId, success: true })
     } catch (e) {
@@ -200,14 +268,26 @@ export async function redownloadMods(
     }
   }
 
-  // Step 5: trigger Steam to validate workshop content for this app
-  // steam://validate kicks off a verification pass which picks up the
-  // re-subscribed items and starts downloading them
-  await shell.openExternal(`steam://validate/${appId}`)
+  const succeededIds = results.filter((r) => r.success).map((r) => r.itemId)
+
+  if (succeededIds.length > 0) {
+    // Step 6: nudge Steam to start downloading each item immediately rather than
+    // waiting for the next Steam client launch or manual queue check
+    for (const itemId of succeededIds) {
+      await shell.openExternal(`steam://workshop_download_item/${appId}/${itemId}`)
+      // Small gap between protocol invocations so Steam doesn't drop any
+      await sleep(200)
+    }
+
+    // Step 7: open the downloads page so the user can see progress and so Steam
+    // flushes any remaining queued items
+    await shell.openExternal('steam://open/downloads')
+  }
 
   return results
 }
 
+// Utility exports
 export async function openModDirectory(modPath: string): Promise<void> {
   const err = await shell.openPath(modPath)
   if (err) throw new Error(`Could not open directory: ${err}`)
