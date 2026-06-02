@@ -1,7 +1,3 @@
-// Europa Universalis V (appId 3450310)
-//
-// The Paradox launcher stores multiple named playsets in playsets.json.
-// Mod paths contain the Steam itemId as the last path segment — no sidecar.
 import * as fs from 'node:fs'
 import { atomicWrite, GameIntegration } from '../gameIntegrations'
 import path from 'node:path'
@@ -42,14 +38,20 @@ export const eu5Integration: GameIntegration = {
     const game = 'Europa Universalis V'
     const file = 'playsets.json'
     const candidates: string[] = []
+    const homeDir = os.homedir()
 
     if (process.platform === 'win32') {
-      candidates.push(path.join(process.env['APPDATA'] ?? '', base, game, file))
+      candidates.push(
+        path.join(homeDir, 'Documents', base, game, file),
+        path.join(homeDir, 'Documents', 'Games', base, 'Europa Universalis 5', file),
+        path.join(homeDir, 'OneDrive', 'Documents', base, game, file),
+        path.join(homeDir, 'OneDrive', 'Documents', 'Games', base, 'Europa Universalis 5', file)
+      )
     } else if (process.platform === 'linux') {
       candidates.push(
-        path.join(os.homedir(), '.local', 'share', base, game, file),
+        path.join(homeDir, '.local', 'share', base, game, file),
         path.join(
-          os.homedir(),
+          homeDir,
           '.local',
           'share',
           'Steam',
@@ -66,7 +68,7 @@ export const eu5Integration: GameIntegration = {
           file
         ),
         path.join(
-          os.homedir(),
+          homeDir,
           '.steam',
           'steam',
           'steamapps',
@@ -83,7 +85,7 @@ export const eu5Integration: GameIntegration = {
         )
       )
     } else if (process.platform === 'darwin') {
-      candidates.push(path.join(os.homedir(), 'Library', 'Application Support', base, game, file))
+      candidates.push(path.join(homeDir, 'Library', 'Application Support', base, game, file))
     }
 
     return candidates.find((p) => fs.existsSync(p)) ?? null
@@ -166,7 +168,6 @@ export const eu5Integration: GameIntegration = {
   async deletePlaysetConfig(configPath, playsetName) {
     const file = JSON.parse(fs.readFileSync(configPath, 'utf8')) as Eu5PlaysetFile
 
-    // Filter out the playset by name
     file.playsets = file.playsets.filter((p) => p.name !== playsetName)
 
     atomicWrite(configPath, JSON.stringify(file, null, '\t'))
