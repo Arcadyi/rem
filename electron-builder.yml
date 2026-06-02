@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: rem
+appId: com.arcadyi.rem
+productName: REM
 directories:
   buildResources: build
 files:
@@ -16,12 +16,16 @@ asarUnpack:
   - node_modules/better-sqlite3/**
   - node_modules/bindings/**
 win:
-  executableName: apsys
+  executableName: REM
+  icon: build/icon.ico
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  allowToChangeInstallationDirectory: true
+  oneClick: false
+  differentialPackage: true
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
@@ -35,7 +39,7 @@ dmg:
 linux:
   target:
     - AppImage
-  maintainer: electronjs.org
+  maintainer: Arcadyi
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
