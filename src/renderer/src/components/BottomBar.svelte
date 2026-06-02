@@ -45,7 +45,7 @@
 <div class="bottombar">
   <span class="label">
     {#if selectedCount > 0}
-      {selectedCount} {currentPage}{selectedCount === 1 ? '' : 's'} selected
+      {selectedCount} {currentPage}{selectedCount === 1 ? '' : ''} selected
     {:else}
       No {currentPage} selected
     {/if}

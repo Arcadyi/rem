@@ -79,14 +79,14 @@ async function communityPost(
   const body = new URLSearchParams({
     id: String(itemId),
     appid: String(appId),
-    sessionid: cookies.sessionId
-  })
+    sessionid: cookies.sessionId.trim()
+  }).toString()
 
   const res = await fetch(`https://steamcommunity.com/sharedfiles/${endpoint}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      Cookie: `steamLoginSecure=${cookies.loginSecure}; sessionid=${cookies.sessionId}`,
+      Cookie: `steamLoginSecure=${cookies.loginSecure.trim()}; sessionid=${cookies.sessionId.trim()}`,
       Referer: `https://steamcommunity.com/sharedfiles/filedetails/?id=${itemId}`,
       Origin: 'https://steamcommunity.com'
     },
@@ -190,7 +190,6 @@ export async function redownloadMods(
 
   return results
 }
-
 
 export async function openModDirectory(modPath: string): Promise<void> {
   const err = await shell.openPath(modPath)
