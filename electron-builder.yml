@@ -44,6 +44,6 @@ appImage:
 npmRebuild: true
 publish:
   provider: github
-  owner: arcadyi
-  repo: https://github.com/Arcadyi/rem.git
+  owner: Arcadyi
+  repo: rem
   releaseType: release

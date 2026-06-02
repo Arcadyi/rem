@@ -50,6 +50,42 @@ if (process.contextIsolated) {
       syncPlaysetToGame: (game: Game, playsetName: string, mods: Mod[]) =>
         ipcRenderer.invoke('syncPlaysetToGame', game, playsetName, mods)
     })
+
+    contextBridge.exposeInMainWorld('updaterAPI', {
+      getVersion: () => ipcRenderer.invoke('get-app-version'),
+      checkForUpdates: () => ipcRenderer.invoke('update-check'),
+      downloadUpdate: () => ipcRenderer.invoke('update-download'),
+      installUpdate: () => ipcRenderer.invoke('update-install'),
+
+      onUpdateAvailable: (cb: (info: { version: string; releaseNotes: string | null }) => void) => {
+        ipcRenderer.on('update-available', (_e, info) => cb(info))
+      },
+      onUpdateNotAvailable: (cb: () => void) => {
+        ipcRenderer.on('update-not-available', cb)
+      },
+      onDownloadProgress: (cb: (percent: number) => void) => {
+        ipcRenderer.on('update-download-progress', (_e, percent) => cb(percent))
+      },
+      onUpdateDownloaded: (cb: () => void) => {
+        ipcRenderer.on('update-downloaded', cb)
+      },
+      onUpdateError: (cb: (message: string) => void) => {
+        ipcRenderer.on('update-error', (_e, message) => cb(message))
+      },
+
+      // Cleanup — we call this when the component unmounts
+      removeAllListeners: () => {
+        for (const ch of [
+          'update-available',
+          'update-not-available',
+          'update-download-progress',
+          'update-downloaded',
+          'update-error'
+        ]) {
+          ipcRenderer.removeAllListeners(ch)
+        }
+      }
+    })
   } catch (error) {
     console.error(error)
   }

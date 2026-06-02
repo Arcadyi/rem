@@ -33,6 +33,7 @@ import {
   getIntegrationInfo,
   syncPlaysetToGame
 } from './gameIntegrations'
+import { setupAutoUpdater } from './updater'
 
 function shutdownSteamAsync(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -217,6 +218,8 @@ app.whenReady().then(() => {
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+  const win = BrowserWindow.getAllWindows()[0]
+  setupAutoUpdater(win)
 })
 
 app.on('window-all-closed', () => {

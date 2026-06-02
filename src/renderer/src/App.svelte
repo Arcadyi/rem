@@ -12,6 +12,8 @@
   import BottomBar from './components/BottomBar.svelte'
   import CreatePlaysetModal from './components/CreatePlaysetModal.svelte'
   import ImportPlaysetModal from './components/ImportPlaysetModal.svelte'
+  import UpdateModal from './components/UpdateModal.svelte'
+  import FooterBar from './components/FooterBar.svelte'
 
   let gamesLoading = $state<boolean>(true)
   let compact = $state<boolean>(false)
@@ -482,7 +484,9 @@
       oncreate={importPlayset}
       onclose={() => (showImportPlaysetModal = false)}
     />
+    <UpdateModal />
   {/if}
+  <FooterBar />
 </div>
 
 <style>

@@ -50,5 +50,17 @@ declare global {
       getGameIntegrationInfo: (appId: number) => Promise<GameIntegrationInfo | null>
       syncPlaysetToGame: (game: Game, playsetName: string, mods: Mod[]) => Promise<void>
     }
+    updaterAPI: {
+      getVersion: () => Promise<string>
+      checkForUpdates: () => Promise<void>
+      downloadUpdate: () => Promise<void>
+      installUpdate: () => Promise<void>
+      onUpdateAvailable: (cb: (info: { version: string; releaseNotes: string | null }) => void) => void
+      onUpdateNotAvailable: (cb: () => void) => void
+      onDownloadProgress: (cb: (percent: number) => void) => void
+      onUpdateDownloaded: (cb: () => void) => void
+      onUpdateError: (cb: (message: string) => void) => void
+      removeAllListeners: () => void
+    }
   }
 }
