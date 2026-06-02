@@ -13,6 +13,7 @@
 
   onMount(async () => {
     currentVersion = await window.updaterAPI.getVersion()
+
     window.updaterAPI.onUpdateAvailable(({ version }) => {
       newVersion = version
       updateState = 'available'

@@ -8,24 +8,24 @@
 
   onMount(async () => {
     version = await window.updaterAPI.getVersion()
+
+    window.updaterAPI.onUpdateAvailable(() => {
+      checkState = 'available'
+    })
+    window.updaterAPI.onUpdateNotAvailable(() => {
+      checkState = 'up-to-date'
+      setTimeout(() => (checkState = 'idle'), 3000)
+    })
+    window.updaterAPI.onUpdateError(() => {
+      checkState = 'error'
+      setTimeout(() => (checkState = 'idle'), 3000)
+    })
   })
 
   async function checkForUpdates(): Promise<void> {
     checkState = 'checking'
     try {
       await window.updaterAPI.checkForUpdates()
-
-      window.updaterAPI.onUpdateAvailable(() => {
-        checkState = 'available'
-      })
-      window.updaterAPI.onUpdateNotAvailable(() => {
-        checkState = 'up-to-date'
-        setTimeout(() => (checkState = 'idle'), 3000)
-      })
-      window.updaterAPI.onUpdateError(() => {
-        checkState = 'error'
-        setTimeout(() => (checkState = 'idle'), 3000)
-      })
     } catch {
       checkState = 'error'
       setTimeout(() => (checkState = 'idle'), 3000)

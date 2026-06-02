@@ -53,6 +53,7 @@ export function setupAutoUpdater(mainWindow: BrowserWindow): void {
   ipcMain.handle('update-check', () => {
     if (is.dev) {
       console.log('[updater] update-check called in dev mode — skipping')
+      setTimeout(() => mainWindow.webContents.send('update-not-available'), 500)
       return null
     }
     console.log('[updater] manual check triggered')
