@@ -346,15 +346,20 @@ async function fetchWorkshopItemInfo(itemIds: number[]): Promise<Map<number, Wor
       if (!res.ok) continue
 
       const json = await res.json()
-      const details: Array<{ publishedfileid: string; title?: string; preview_url?: string }> =
-        json?.response?.publishedfiledetails ?? []
+      const details: Array<{
+        publishedfileid: string
+        title?: string
+        preview_url?: string
+        time_updated?: number
+      }> = json?.response?.publishedfiledetails ?? []
 
       for (const item of details) {
         const id = parseInt(item.publishedfileid, 10)
         if (!isNaN(id)) {
           result.set(id, {
             name: item.title ?? String(id),
-            previewUrl: item.preview_url ?? null
+            previewUrl: item.preview_url ?? null,
+            timeUpdated: item.time_updated ?? 0
           })
         }
       }
@@ -371,15 +376,12 @@ async function fetchWorkshopItemInfo(itemIds: number[]): Promise<Map<number, Wor
  */
 export async function getModsForGame(game: Game): Promise<Mod[]> {
   const { workshopPath, appId } = game
-
   if (!fs.existsSync(workshopPath)) return []
 
-  // Find the steamapps dir: workshop/content/<appId> → up three levels → steamapps
   const steamappsDir = path.resolve(workshopPath, '..', '..', '..')
   const acfPath = path.join(steamappsDir, 'workshop', `appworkshop_${appId}.acf`)
   const workshopMeta = parseWorkshopAcf(acfPath)
 
-  // Each subdirectory in workshopPath is one installed mod, named by its itemId
   let entries: fs.Dirent[]
   try {
     entries = fs.readdirSync(workshopPath, { withFileTypes: true })
@@ -390,42 +392,44 @@ export async function getModsForGame(game: Game): Promise<Mod[]> {
   const modDirs = entries.filter((e) => e.isDirectory() && /^\d+$/.test(e.name))
   const itemIds = modDirs.map((e) => parseInt(e.name, 10))
 
-  const mods: Mod[] = []
+  const info = await fetchWorkshopItemInfo(itemIds)
 
+  const mods: Mod[] = []
   for (const dir of modDirs) {
     const itemId = parseInt(dir.name, 10)
     const modPath = path.join(workshopPath, dir.name)
     const meta = workshopMeta.get(itemId)
-
-    // Local timestamp: mtime of the mod folder (updated when Steam syncs it)
-    let localTimestamp: Date
-    try {
-      localTimestamp = fs.statSync(modPath).mtime
-    } catch {
-      localTimestamp = new Date(0)
-    }
-
-    const remoteTimestamp = meta?.remoteTimestamp ?? new Date(0)
+    const remoteTimestamp = meta?.remoteTimestamp.getTime() ?? 0
     const sizeBytes = meta?.sizeBytes ?? 0
 
+    // API time_updated = when the author last pushed an update to the Workshop
+    // ACF timeupdated  = timestamp of the version we currently have installed
+    // If the Workshop version is newer → outdated
+    const apiTimeUpdated = (info.get(itemId)?.timeUpdated ?? 0) * 1000
+
     let status: ModStatus
-    if (remoteTimestamp.getTime() === 0) {
+    if (apiTimeUpdated === 0) {
       status = 'unknown'
-    } else if (localTimestamp >= remoteTimestamp) {
+    } else if (remoteTimestamp >= apiTimeUpdated) {
       status = 'upToDate'
     } else {
       status = 'outdated'
     }
 
-    const info = await fetchWorkshopItemInfo(itemIds)
+    let localTimestamp: number
+    try {
+      localTimestamp = fs.statSync(modPath).mtime.getTime()
+    } catch {
+      localTimestamp = 0
+    }
 
     mods.push({
       itemId,
       name: info.get(itemId)?.name ?? String(itemId),
       previewUrl: info.get(itemId)?.previewUrl ?? null,
       path: modPath,
-      localTimestamp: localTimestamp.getTime(),
-      remoteTimestamp: remoteTimestamp.getTime(),
+      localTimestamp,
+      remoteTimestamp,
       status,
       sizeBytes
     })
@@ -491,7 +495,7 @@ export async function getModsForGameLocal(game: Game): Promise<Mod[]> {
 
 export async function enrichModsWithRemoteInfo(
   mods: Mod[]
-): Promise<Map<number, { name: string; previewUrl: string | null }>> {
+): Promise<Map<number, { name: string; previewUrl: string | null; timeUpdated: number }>> {
   const itemIds = mods.map((m) => m.itemId)
   return await fetchWorkshopItemInfo(itemIds)
 }

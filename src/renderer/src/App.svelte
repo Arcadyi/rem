@@ -138,11 +138,22 @@
       for (const { appId, mods } of results) {
         enrichedCache.set(
           appId,
-          mods.map((m) => ({
-            ...m,
-            name: enriched[m.itemId]?.name ?? m.name,
-            previewUrl: enriched[m.itemId]?.previewUrl ?? null
-          }))
+          mods.map((m) => {
+            const info = enriched[m.itemId]
+            const apiTimeUpdated = (info?.timeUpdated ?? 0) * 1000
+
+            let status = m.status
+            if (apiTimeUpdated > 0) {
+              status = m.remoteTimestamp >= apiTimeUpdated ? 'upToDate' : 'outdated'
+            }
+
+            return {
+              ...m,
+              name: info?.name ?? m.name,
+              previewUrl: info?.previewUrl ?? null,
+              status
+            }
+          })
         )
       }
       modsCache = enrichedCache
@@ -163,11 +174,22 @@
       const game = $state.snapshot(selectedGame) as Game
       const freshMods = await window.steamAPI.getModsForGameLocal(game)
       const enriched = await window.steamAPI.enrichMods(freshMods)
-      const enrichedMods = freshMods.map((m) => ({
-        ...m,
-        name: enriched[m.itemId]?.name ?? m.name,
-        previewUrl: enriched[m.itemId]?.previewUrl ?? null
-      }))
+      const enrichedMods = freshMods.map((m) => {
+        const info = enriched[m.itemId]
+        const apiTimeUpdated = (info?.timeUpdated ?? 0) * 1000
+
+        let status = m.status
+        if (apiTimeUpdated > 0) {
+          status = m.remoteTimestamp >= apiTimeUpdated ? 'upToDate' : 'outdated'
+        }
+
+        return {
+          ...m,
+          name: info?.name ?? m.name,
+          previewUrl: info?.previewUrl ?? null,
+          status
+        }
+      })
       modsCache.set(selectedGame.appId, enrichedMods)
       mods = enrichedMods
     } catch (e) {

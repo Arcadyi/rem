@@ -24,7 +24,7 @@ declare global {
       getInstalledGames: () => Promise<Game[]>
       getModsForGame: (game: Game) => Promise<Mod[]>
       getModsForGameLocal: (game: Game) => Promise<Mod[]>
-      enrichMods: (mods: Mod[]) => Promise<Record<number, { name: string; previewUrl: string | null }>>
+      enrichMods: (mods: Mod[]) => Promise<Record<number, WorkshopItemInfo>>
       isSteamRunning: () => Promise<boolean>
       shutdownSteam: () => Promise<void>
       startSteam: () => Promise<void>

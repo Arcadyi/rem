@@ -25,6 +25,7 @@ export interface Mod {
 export interface WorkshopItemInfo {
   name: string
   previewUrl: string | null
+  timeUpdated: number
 }
 
 export interface PlaysetModEntry {
