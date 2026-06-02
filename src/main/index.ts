@@ -72,12 +72,12 @@ function createWindow(): void {
     frame: false,
     transparent: true,
     ...(isWin11 ? { backgroundMaterial: 'acrylic' } : {}),
-    ...(process.platform === 'linux' ? { icon } : {}),
+    ...(process.platform === 'linux' ? { icon } : { icon }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     },
-    icon: path.join(__dirname, '../../../resources/icon.png')
+    icon
   })
 
   ipcMain.on('minimize', () => mainWindow.minimize())
