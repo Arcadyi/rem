@@ -55,6 +55,7 @@ const isWin11 =
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
+    title: 'REM',
     width: 1200,
     height: 800,
     minWidth: 800,
@@ -68,7 +69,8 @@ function createWindow(): void {
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
-    }
+    },
+    icon: path.join(__dirname, '../../../resources/icon.png')
   })
 
   ipcMain.on('minimize', () => mainWindow.minimize())
@@ -106,10 +108,7 @@ app.whenReady().then(() => {
 
   ipcMain.on('ping', () => console.log('pong'))
 
-  // -------------------------------------------------------------------------
   // Steam / mod handlers (unchanged)
-  // -------------------------------------------------------------------------
-
   ipcMain.handle('getInstalledGames', async () => {
     return await getInstalledGames()
   })
