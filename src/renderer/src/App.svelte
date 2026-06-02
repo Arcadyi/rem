@@ -14,6 +14,7 @@
   import ImportPlaysetModal from './components/ImportPlaysetModal.svelte'
   import UpdateModal from './components/UpdateModal.svelte'
   import FooterBar from './components/FooterBar.svelte'
+  import AddToPlaysetModal from './components/AddToPlaysetModal.svelte'
 
   let gamesLoading = $state<boolean>(true)
   let compact = $state<boolean>(false)
@@ -51,6 +52,11 @@
   let showNewPlaysetModal = $state(false)
   let showImportPlaysetModal = $state(false)
 
+  let showAddToPlaysetModal = $state(false)
+  let addToPlaylist = $state<() => void>(() => {
+    showAddToPlaysetModal = true
+  })
+
   let searchQuery = $state('')
   let sortOrder = $state<'default' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'>('default')
   let playsetSortOrder = $state<
@@ -62,9 +68,7 @@
     compact = !compact
   })
   let modListSelectAll = $state<() => void>(() => {})
-  let addToPlaylist = $state<() => void>(() => {
-    console.log('Adding to playlist:', [...selectedModIds])
-  })
+
   let modListDeselectAll = $state<() => void>(() => {})
   let modListRedownload = $state<() => Promise<void>>(async () => {})
   let modListUnsubscribe = $state<() => Promise<void>>(async () => {})
@@ -367,6 +371,48 @@
     await loadPlaysets()
   }
 
+  async function addSelectedModsToPlayset(playset: Playset): Promise<void> {
+    const selected = mods.filter((m) => selectedModIds.has(m.itemId))
+    const merged = $state.snapshot([...playset.mods, ...selected]) as Mod[]
+    await window.steamAPI.updatePlayset(playset.id, { mods: merged })
+    if (gameIntegrationInfo?.canSync && selectedGame) {
+      try {
+        await window.steamAPI.syncPlaysetToGame(
+          $state.snapshot(selectedGame) as Game,
+          playset.name,
+          merged
+        )
+      } catch (e) {
+        console.error('[playset] auto-sync after add failed:', e)
+      }
+    }
+    await loadPlaysets()
+    selectedModIds.clear()
+  }
+
+  async function createPlaysetWithMods(name: string): Promise<void> {
+    if (!selectedGame) return
+    const selected = mods.filter((m) => selectedModIds.has(m.itemId))
+    await window.steamAPI.createPlayset(
+      name,
+      selectedGame.appId,
+      $state.snapshot(selected) as Mod[]
+    )
+    if (gameIntegrationInfo?.canSync) {
+      try {
+        await window.steamAPI.syncPlaysetToGame(
+          $state.snapshot(selectedGame) as Game,
+          name,
+          $state.snapshot(selected) as Mod[]
+        )
+      } catch (e) {
+        console.error('[playset] auto-sync after create failed:', e)
+      }
+    }
+    await loadPlaysets()
+    selectedModIds.clear()
+  }
+
   onMount(async () => {
     await loadCookies()
     await loadGames()
@@ -485,6 +531,14 @@
       onclose={() => (showImportPlaysetModal = false)}
     />
     <UpdateModal />
+    <AddToPlaysetModal
+      open={showAddToPlaysetModal}
+      {playsets}
+      selectedMods={mods.filter((m) => selectedModIds.has(m.itemId))}
+      onadd={addSelectedModsToPlayset}
+      oncreate={createPlaysetWithMods}
+      onclose={() => (showAddToPlaysetModal = false)}
+    />
   {/if}
   <FooterBar />
 </div>

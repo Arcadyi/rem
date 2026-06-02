@@ -52,15 +52,15 @@
   </span>
   <div class="actions">
     {#if onAddToPlaylist}
-      <!--<Tooltip text="Add selected items to a playlist"> -->
-      <!--  <button -->
-      <!--    class="round-button" -->
-      <!--    onclick={onAddToPlaylist} -->
-      <!--    disabled={actionLoading || selectedCount === 0} -->
-      <!--  > -->
-      <!--    <IconamoonSignPlus width={24} height={24} /> -->
-      <!--  </button> -->
-      <!--</Tooltip> -->
+      <Tooltip text="Add selected items to a playset">
+        <button
+          class="round-button"
+          onclick={onAddToPlaylist}
+          disabled={actionLoading || selectedCount === 0}
+        >
+          <IconamoonSignPlus width={24} height={24} />
+        </button>
+      </Tooltip>
     {/if}
     {#if onRedownload}
       <Tooltip text="Force redownload of the selected items">
