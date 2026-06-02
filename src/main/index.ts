@@ -17,7 +17,13 @@ import * as os from 'node:os'
 import path from 'node:path'
 import * as fs from 'node:fs'
 import { pathToFileURL } from 'node:url'
-import { openModDirectory, openModPage, redownloadMods, unsubscribeFromMods } from './steamWorkshop'
+import {
+  openModDirectory,
+  openModPage,
+  redownloadMods,
+  subscribeMods,
+  unsubscribeFromMods
+} from './steamWorkshop'
 import {
   createPlayset,
   decodeShareCode,
@@ -167,6 +173,11 @@ app.whenReady().then(() => {
       `appworkshop_${appId}.acf`
     )
     return unsubscribeFromMods(mods, appId, acfPath, cookies)
+  })
+
+  ipcMain.handle('subscribeMods', async (_e, itemIds: number[], appId: number) => {
+    const cookies = getSteamCookies()
+    return subscribeMods(itemIds, appId, cookies)
   })
 
   ipcMain.handle('redownloadMods', async (_e, mods: Mod[], appId: number) => {

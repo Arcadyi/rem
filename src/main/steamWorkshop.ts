@@ -147,6 +147,23 @@ export async function unsubscribeFromMods(
   return results
 }
 
+export async function subscribeMods(
+  itemIds: number[],
+  appId: number,
+  cookies: SteamCookies
+): Promise<WorkshopActionResult[]> {
+  const results: WorkshopActionResult[] = []
+  for (const itemId of itemIds) {
+    try {
+      await subscribeToMod(itemId, appId, cookies)
+      results.push({ itemId, success: true })
+    } catch (e) {
+      results.push({ itemId, success: false, error: String(e) })
+    }
+  }
+  return results
+}
+
 // Force redownload
 
 /**

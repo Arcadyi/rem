@@ -28,6 +28,8 @@ if (process.contextIsolated) {
       openModDirectory: (modPath: string) => ipcRenderer.invoke('openModDirectory', modPath),
       unsubscribeMods: (mods: Mod[], appId: number) =>
         ipcRenderer.invoke('unsubscribeMods', mods, appId),
+      subscribeMods: (itemIds: number[], appId: number) =>
+        ipcRenderer.invoke('subscribeMods', itemIds, appId),
       redownloadMods: (mods: Mod[], appId: number) =>
         ipcRenderer.invoke('redownloadMods', mods, appId),
 

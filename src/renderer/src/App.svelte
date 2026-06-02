@@ -369,6 +369,7 @@
       }
     }
     await loadPlaysets()
+    await refreshMods()
   }
 
   async function addSelectedModsToPlayset(playset: Playset): Promise<void> {
@@ -526,6 +527,7 @@
     <ImportPlaysetModal
       open={showImportPlaysetModal}
       appId={selectedGame?.appId ?? 0}
+      game={selectedGame}
       availableMods={mods}
       oncreate={importPlayset}
       onclose={() => (showImportPlaysetModal = false)}

@@ -36,6 +36,7 @@ declare global {
       openModPage: (itemId: number) => Promise<void>
       openModDirectory: (modPath: string) => Promise<void>
       unsubscribeMods: (mods: Mod[], appId: number) => Promise<WorkshopActionResult[]>
+      subscribeMods: (itemIds: number[], appId: number) => Promise<WorkshopActionResult[]>
       redownloadMods: (mods: Mod[], appId: number) => Promise<WorkshopActionResult[]>
 
       getPlaysets: (appId: number) => Promise<Playset[]>
